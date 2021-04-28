@@ -455,7 +455,7 @@ bot.command('randomspell', async (ctx) => {
 })
 
 bot.help(async ctx => {
-    await ctx.reply("This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell")
+    await ctx.reply("This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell\n -/randomrolledchar")
 })
 
 bot.start(async ctx => {
