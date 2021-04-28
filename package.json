@@ -1,0 +1,24 @@
+{
+  "name": "OneSpellPerRound",
+  "version": "1.0.0",
+  "description": "this bot will help you roll a random characters for D&D 5e",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "Gabriele Diddo Ligetta",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "faker": "^5.1.0",
+    "node-cron": "^3.0.0",
+    "random-item": "^3.1.0",
+    "telegraf": "^3.38.0",
+    "unique-random-array": "^2.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  }
+}
