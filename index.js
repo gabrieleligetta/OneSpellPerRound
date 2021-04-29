@@ -54,7 +54,8 @@ function getBookQuote() {
 }
 
 function getRandomQuote() {
-    let quotes = ["They are coming for you...",
+    let quotes = [
+        "They are coming for you...",
         "Give in to your fear...",
         "Kill them all... before they kill you...",
         "They have turned against you... now, take your revenge...",
