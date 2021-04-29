@@ -4,7 +4,7 @@ const randomItem = require('random-item')
 const faker = require('faker')
 const cron = require('node-cron');
 
-//const bot = new telegraf(***REMOVED***)
+//const bot = new telegraf('')
 const bot = new Composer
 
 function getRandomName() {
@@ -292,7 +292,7 @@ async function getClass(charLevel) {
 async function getSubrace(race) {
     if (race.data.subraces.length) {
         let possibleraces = []
-        let random = Math.round(Math.random() * 10)
+        let random = Math.round(Math.ranzdom() * 10)
         race.data.subraces.forEach((subrace) => {
             possibleraces.push(subrace.url)
         })
