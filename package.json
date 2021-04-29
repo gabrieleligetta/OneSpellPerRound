@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "micro-bot"
   },
   "keywords": [],
   "author": "Gabriele Diddo Ligetta",
@@ -13,9 +13,9 @@
   "dependencies": {
     "axios": "^0.21.1",
     "faker": "^5.1.0",
+    "micro-bot": "^2.5.3",
     "node-cron": "^3.0.0",
     "random-item": "^3.1.0",
-    "telegraf": "^3.38.0",
     "unique-random-array": "^2.0.0"
   },
   "devDependencies": {
