@@ -1,11 +1,10 @@
-const {Composer} = require('micro-bot')
+const telegraf = require('telegraf')
 const axios = require('axios')
 const randomItem = require('random-item')
 const faker = require('faker')
 const cron = require('node-cron');
 
-//const bot = new telegraf('')
-const bot = new Composer
+const bot = new telegraf('1468923602:AAFgyjeSroQ1aYw7VziUeqDZFBqMAmr-W4o')
 
 function getRandomName() {
     return faker.name.findName();
@@ -292,7 +291,7 @@ async function getClass(charLevel) {
 async function getSubrace(race) {
     if (race.data.subraces.length) {
         let possibleraces = []
-        let random = Math.round(Math.ranzdom() * 10)
+        let random = Math.round(Math.random() * 10)
         race.data.subraces.forEach((subrace) => {
             possibleraces.push(subrace.url)
         })
@@ -461,7 +460,7 @@ bot.help(async ctx => {
 })
 
 bot.start(async ctx => {
-    await ctx.reply("Welcome to OneSpellPerRound, This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell\n -/randomrolledchar")
+    await ctx.reply("Welcome to OneSpellPerRound, This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell")
 })
 
 bot.hears(['piaga','Piaga','Reame remoto', 'Reame Remoto', 'reame remoto', 'reame Remoto','PIAGA','REAME REMOTO'], (ctx) => ctx.reply("<i>"+getRandomQuote()+"</i>",{parse_mode: "HTML"}))
@@ -472,9 +471,4 @@ bot.hears(['adam','Adamo','Adam', 'adamo','ADAM','ADAMO'], (ctx) => ctx.reply(" 
 bot.hears(['nyarla','nyarlathotep','Nyarla','Nyarlathotep','NYARLA','NYARLATHOTEP','nyarlatothep','Nyarlatothep',"Araldo","araldo"], (ctx) => ctx.reply("<i>"+getRandomQuote()+"</i>",{parse_mode: "HTML"}))
 bot.hears(['diario','Diario','tomo','Tomo','Quaderno','quaderno','libro','Libro'], (ctx) => ctx.reply(getBookQuote()))
 
-//bot.launch()
-module.exports = bot
-
-//arcane-escarpment-95366
-//https://arcane-escarpment-95366.herokuapp.com/ | https://git.heroku.com/arcane-escarpment-95366.git
-//added a comment
+bot.launch()
