@@ -296,9 +296,8 @@ async function getClass(charLevel) {
 
  async function getRace() {
      let racemark = await axios.get("http://www.dnd5eapi.co/api/races/")
-     let race = await axios.get("http://www.dnd5eapi.co/api/races/" + randomItem(racemark.data.results).index)
      //let race = await axios.get("http://www.dnd5eapi.co/api/races/half-elf")
-     return race;
+     return await axios.get("http://www.dnd5eapi.co/api/races/" + randomItem(racemark.data.results).index);
  }
 
 async function getSubrace(race) {
