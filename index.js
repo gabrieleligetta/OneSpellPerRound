@@ -2,12 +2,13 @@ const telegraf = require('telegraf')
 const axios = require('axios')
 const randomItem = require('random-item')
 const faker = require('faker')
-const cron = require('node-cron')
+//const cron = require('node-cron')
 const express = require('express')
 const path = require('path')
-const token = process.env.BOT_TOKEN;
+
+require('dotenv').config()
+const token = process.env.BOT_TOKEN
 const PORT = process.env.PORT || 5000
-require('dotenv').config();
 
 
 express()
