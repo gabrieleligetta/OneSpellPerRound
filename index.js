@@ -5,9 +5,11 @@ const faker = require('faker')
 const cron = require('node-cron')
 const express = require('express')
 const path = require('path')
-require('dotenv').config();
 const token = process.env.BOT_TOKEN;
 const PORT = process.env.PORT || 5000
+require('dotenv').config();
+
+
 express()
     .use(express.static(path.join(__dirname, 'public')))
     .set('views', path.join(__dirname, 'views'))
@@ -15,7 +17,6 @@ express()
     .get('/', (req, res) => res.render('pages/index'))
     .listen(PORT, () => console.log(`Listening on ${ PORT }`))
 
-//const bot = new telegraf('1468923602:AAFgyjeSroQ1aYw7VziUeqDZFBqMAmr-W4o')
 const bot = new telegraf(token)
 
 
