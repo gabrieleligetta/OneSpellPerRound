@@ -18,6 +18,7 @@
     "node-cron": "^3.0.0",
     "random-item": "^3.1.0",
     "telegraf": "^3.38.0",
+    "dotenv": "^6.2.0",
     "unique-random-array": "^2.0.0"
   },
   "devDependencies": {
