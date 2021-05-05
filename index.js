@@ -10,6 +10,21 @@ require('dotenv').config()
 const token = process.env.BOT_TOKEN
 const PORT = process.env.PORT || 5000
 
+const fs = require('fs');
+let rawbackgrounds = fs.readFileSync('backgrounds.json');
+
+
+
+//Global Variables
+let racesGlobal
+let classesGlobal
+let scoresGlobal
+let skillsGlobal
+let backgroundsGlobal = JSON.parse(rawbackgrounds.toString())
+let raceGlobalArray = []
+let classGlobalArray = []
+let subracesGlobalArray = []
+
 
 express()
     .use(express.static(path.join(__dirname, 'public')))
@@ -172,13 +187,26 @@ async function getFormattedReply(character) {
     return reply;
 }
 
-async function getStandardChar(msg,level) {
+async function getStandardChar(msg,level,mode) {
       let name = getName(msg)
-      let classe = await getClass(level)
-      let race = await getRace()
-      let subrace = await getSubrace(race)
-      let scores = await getStandardScores(race,subrace)
-      let background = await getBackground()
+      let classe = await getClass(level) //cachato
+      let race = await getRace() //cachato
+      let subrace = await getSubrace(race) //cachato
+      let scores //cachato
+          switch (mode) {
+              case 'standard':
+                  scores = await getStandardScores(race,subrace)
+                  break
+              case 'rolled':
+                  scores = await getRolledScores(race,subrace)
+                  break
+              case 'best':
+                  scores = await getBestScores(race,subrace,classe)
+                  break
+              default:
+                  scores = await getStandardScores(race,subrace)
+          }
+      let background = await getBackground() //locale
       let proficiencies = await getProficiencies(background.char_background,classe,race)
       let character = {
         name : name,
@@ -192,73 +220,6 @@ async function getStandardChar(msg,level) {
         }
   return await getFormattedReply(character);
  }
-
-async function getRolledScores(race, subrace) {
-    let ability = await axios.get("http://www.dnd5eapi.co/api/ability-scores/")
-    let values = []
-    //let rolling = []
-    let i
-    for (i = 0; i < 7; i++) {
-        //rolling = [abstractDice(1,6),abstractDice(1,6),abstractDice(1,6),abstractDice(1,6)]
-        // rolling = rolling.sort().filter((_,i) => i)
-        // let sum = rolling.reduce(function(a, b){
-        //     return a + b;
-        // }, 0);
-        // values.push(sum)
-        values.push(abstractDice(1,6)+abstractDice(1,6)+abstractDice(1,6))
-    }
-    values = removeSmallest(values)
-    let scores = {}
-    ability.data.results.forEach((element) => {
-        let temp = randomItem(values)
-        scores[element.name] = temp
-        let index = values.indexOf(temp)
-        if (index > -1) {
-            values.splice(index, 1)
-        }
-    })
-    race.data.ability_bonuses.forEach((ability_bonus) => {
-        if (ability_bonus.ability_score.name in scores) {
-            let bonus = ability_bonus.bonus
-            let name = ability_bonus.ability_score.name
-            //console.log(race.data.name, name, bonus)
-            scores[name] += bonus
-        }
-    })
-
-    if (subrace) {
-        subrace.data.ability_bonuses.forEach((ability_bonus) => {
-            if (ability_bonus.ability_score.name in scores) {
-                let bonus = ability_bonus.bonus
-                let name = ability_bonus.ability_score.name
-                //console.log(subrace.data.name, name, bonus)
-                scores[name] += bonus
-            }
-        })
-    }
-    return scores
-}
-
-async function getRolledChar(msg,level) {
-    let name = getName(msg)
-    let classe = await getClass(level)
-    let race = await getRace()
-    let subrace = await getSubrace(race)
-    let scores = await getRolledScores(race,subrace)
-    let background = await getBackground()
-    let proficiencies = await getProficiencies(background.char_background,classe,race)
-    let character = {
-        name : name,
-        level: level,
-        classe : classe,
-        race : race,
-        subrace : subrace,
-        scores : scores,
-        background : background,
-        proficiencies : proficiencies
-    }
-    return await getFormattedReply(character);
-}
 
 async function getFormattedSpell(spell) {
 
@@ -287,19 +248,60 @@ function getName(msg) {
     return name
 }
 
+async function getClasses() {
+    if (classesGlobal) {
+        //console.log('classes cachato')
+        return classesGlobal
+    } else {
+        //console.log('sto scaricando classes')
+        classesGlobal = await axios.get("http://www.dnd5eapi.co/api/classes/")
+        return classesGlobal
+    }
+}
+
 async function getClass(charLevel) {
-    let ddclassmark = await axios.get("http://www.dnd5eapi.co/api/classes/")
-    let ddclass = await axios.get("http://www.dnd5eapi.co/api/classes/" + randomItem(ddclassmark.data.results).index)
-    //let ddclass = await axios.get("http://www.dnd5eapi.co/api/classes/monk")
-    if (ddclass) {
-        return ddclass
+    let classesArray = await getClasses()
+    let tempClass = randomItem(classesArray.data.results).index
+    let tempStore = classGlobalArray[tempClass]
+    //console.log(tempStore)
+    if (tempStore) {
+        //console.log('class cachato')
+        return tempStore
+    } else {
+        //console.log('sto scaricando class')
+        classGlobalArray[tempClass] =  await axios.get("http://www.dnd5eapi.co/api/classes/" + tempClass)
+        //console.log(raceGlobalArray[tempRace])
+        return classGlobalArray[tempClass]
+    }
+}
+
+async function getRaces() {
+    if (racesGlobal) {
+        //console.log('races cachato')
+        return racesGlobal
+    } else {
+        //console.log('sto scaricando races')
+        racesGlobal = await axios.get("http://www.dnd5eapi.co/api/races/")
+        return racesGlobal
     }
 }
 
  async function getRace() {
-     let racemark = await axios.get("http://www.dnd5eapi.co/api/races/")
+    let racesArray = await getRaces()
+     let tempRace = randomItem(racesArray.data.results).index
+     let tempStore = raceGlobalArray[tempRace]
+     //console.log(tempStore)
+     if (tempStore) {
+         //console.log('race cachato')
+        return tempStore
+     } else {
+         //console.log('sto scaricando race')
+         raceGlobalArray[tempRace] =  await axios.get("http://www.dnd5eapi.co/api/races/" + tempRace)
+         //console.log(raceGlobalArray[tempRace])
+         return raceGlobalArray[tempRace]
+     }
      //let race = await axios.get("http://www.dnd5eapi.co/api/races/half-elf")
-     return await axios.get("http://www.dnd5eapi.co/api/races/" + randomItem(racemark.data.results).index);
+
  }
 
 async function getSubrace(race) {
@@ -310,7 +312,16 @@ async function getSubrace(race) {
             possibleraces.push(subrace.url)
         })
         if (random > 5) {
-            return axios.get("http://www.dnd5eapi.co" + randomItem(possibleraces))
+            let tempSubrace = randomItem(possibleraces)
+            let tempStore = subracesGlobalArray[tempSubrace]
+            if (tempStore) {
+                //console.log('subrace cachato')
+                return tempStore
+            } else {
+                //console.log('sto scaricando subrace')
+                subracesGlobalArray[tempSubrace] =  await axios.get("http://www.dnd5eapi.co" + tempSubrace)
+                return subracesGlobalArray[tempSubrace]
+            }
         } else {
            return false
         }
@@ -319,9 +330,19 @@ async function getSubrace(race) {
     }
 }
 
+async function getAbilityScores() {
+    if (scoresGlobal) {
+        //console.log('abilities cachato')
+        return scoresGlobal
+    } else {
+        //console.log('sto scaricando abilities')
+        return scoresGlobal = await axios.get("http://www.dnd5eapi.co/api/ability-scores/")
+    }
+}
+
 async function getStandardScores(race,subrace) {
     let values = [15, 14, 13, 12, 10, 8]
-    let ability = await axios.get("http://www.dnd5eapi.co/api/ability-scores/")
+    let ability = await getAbilityScores()
     let scores = {}
     ability.data.results.forEach((element) => {
         let temp = randomItem(values)
@@ -331,6 +352,207 @@ async function getStandardScores(race,subrace) {
             values.splice(index, 1)
         }
     })
+    return addRaceScores(race,subrace,scores)
+}
+
+function removeFromArray(array,value) {
+    let index = array.indexOf(value)
+    return array.slice(index,1)
+}
+
+async function getBestScores(race,subrace,classe) {
+    let values = [12, 10, 8]
+    let ability = await getAbilityScores()
+    let scores = {}
+    let abilitiesObj = ability.data.results
+    let abone
+    let abtwo
+    let abthree
+    switch (classe.data.name) {
+
+        case 'Barbarian':
+            abone = 'STR'
+            abtwo = 'CON'
+            abthree = randomItem(['DEX','CHA','WIS'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Bard':
+            abone = 'CHA'
+            abtwo = 'DEX'
+            abthree = randomItem(['CON','INT','WIS'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Cleric':
+            abone = 'WIS'
+            abtwo = 'CON'
+            abthree = randomItem(['DEX','CHA','STR'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Druid':
+            abone = 'WIS'
+            abtwo = 'CON'
+            abthree = randomItem(['DEX','INT','CHA'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Fighter':
+            let figabi = ['STR','DEX']
+            let figabitwo = ['COS','INT']
+            abone = randomItem(figabi)
+            figabi = removeFromArray(figabi,abone)
+            abtwo = randomItem(figabitwo)
+            figabitwo = removeFromArray(figabitwo,abtwo)
+            abthree = randomItem(figabi.concat(figabitwo))
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Monk':
+            let monkabi = ['STR','DEX']
+            abone = randomItem(monkabi)
+            monkabi = removeFromArray(monkabi,abone)
+            abtwo = 'WIS'
+            abthree = randomItem(monkabi.concat(['INT','CON']))
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Paladin':
+            abone = 'STR'
+            abtwo = 'CHA'
+            abthree = randomItem(['DEX','INT','CON'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Ranger':
+            let rangerabi = ['DEX','STR']
+            abone = randomItem(rangerabi)
+            abtwo = 'WIS'
+            abthree = randomItem(rangerabi.concat(['CON']))
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Rogue':
+            let rogueabi = ['INT','CHA']
+            abone = 'DEX'
+            abtwo = randomItem(rogueabi)
+            abthree = 'CON'
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Sorcerer':
+            abone = 'CHA'
+            abtwo = 'CON'
+            abthree = randomItem(['DEX','INT','WIS'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Warlock':
+            abone = 'CHA'
+            abtwo = 'CON'
+            abthree = randomItem(['DEX','INT','WIS'])
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+        case 'Wizard':
+            let wizabi = ['COS','DEX','CAR']
+            abone = 'INT'
+            abtwo = randomItem(wizabi)
+            wizabi = removeFromArray(wizabi,abtwo)
+            abthree = randomItem(wizabi)
+            scores[abone] = 15
+            scores[abtwo] = 14
+            scores[abthree] = 13
+            abilitiesObj = abilitiesObj.filter(function( obj ) {
+                return obj.name !== abone && obj.name !== abtwo && obj.name !== abthree
+            })
+            break;
+    }
+    abilitiesObj.forEach((element) => {
+        let temp = randomItem(values)
+        scores[element.name] = temp
+        let index = values.indexOf(temp)
+        if (index > -1) {
+            values.splice(index, 1)
+        }
+    })
+    return addRaceScores(race,subrace,scores)
+}
+
+async function getRolledScores(race, subrace) {
+    let ability = await getAbilityScores()
+    let values = []
+    //let rolling = []
+    let i
+    let scores = {}
+    for (i = 0; i < 7; i++) {
+        //rolling = [abstractDice(1,6),abstractDice(1,6),abstractDice(1,6),abstractDice(1,6)]
+        // rolling = rolling.sort().filter((_,i) => i)
+        // let sum = rolling.reduce(function(a, b){
+        //     return a + b;
+        // }, 0);
+        // values.push(sum)
+        values.push(abstractDice(1,6)+abstractDice(1,6)+abstractDice(1,6))
+    }
+    values = removeSmallest(values)
+    ability.data.results.forEach((element) => {
+        let temp = randomItem(values)
+        scores[element.name] = temp
+        let index = values.indexOf(temp)
+        if (index > -1) {
+            values.splice(index, 1)
+        }
+    })
+
+    return addRaceScores(race,subrace,scores)
+}
+
+function addRaceScores(race,subrace,scores) {
     race.data.ability_bonuses.forEach((ability_bonus) => {
         if (ability_bonus.ability_score.name in scores) {
             let bonus = ability_bonus.bonus
@@ -354,10 +576,11 @@ async function getStandardScores(race,subrace) {
 }
 
 async function getBackground() {
-    let background = await axios.get("https://5e.tools/data/backgrounds.json?v=1.119.0")
+    let backgrounds = backgroundsGlobal
+    //console.log(backgrounds)
     let vanillaback = []
     let true_back
-    background.data.background.forEach((element) => {
+    backgrounds.background.forEach((element) => {
         if (element.source == "PHB") {
             if (element.name != "Variant Guild Artisan (Guild Merchant)") {
                 //console.log(element.name)
@@ -394,8 +617,25 @@ async function getBackground() {
         }
 }
 
+async function getSkills() {
+    if (skillsGlobal) {
+        //console.log('skills cachato')
+        return skillsGlobal
+    } else {
+        //console.log('sto scaricando skills')
+        skillsGlobal = await axios.get("http://www.dnd5eapi.co/api/skills/")
+        return skillsGlobal
+    }
+}
+
 async function getProficiencies(background,classe,race) {
     let profs = Object.keys(background.skillProficiencies[0])
+    if (profs.includes('animal handling')) {
+        profs = profs.map(item => item == 'animal handling' ? 'Animal Handling' : item)
+    }
+    if (profs.includes('sleight of hand')) {
+        profs = profs.map(item => item == 'animal handling' ? 'Sleight of Hand' : item)
+    }
     let stringa = profs.toString().replace(/,/g, ", ").capitalize()
     stringa = makeUpperCaseAfterCommas(stringa)
     let choose
@@ -416,7 +656,7 @@ async function getProficiencies(background,classe,race) {
     let chosenChoices = shuffled.slice(0, choose)
     chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ",""))
     if (race.data.name == 'Half-Elf') {
-        let skills = await axios.get("http://www.dnd5eapi.co/api/skills/")
+        let skills = await getSkills()
         skills = skills.data.results
         for (let prof of chosenChoices) {
             skills = skills.filter(function (obj) {
@@ -444,7 +684,7 @@ bot.command('randomchar', async (ctx) => {
     let msg = ctx.message.text
     let charLevel = 1
     //name
-    let reply = await getStandardChar(msg,charLevel)
+    let reply = await getStandardChar(msg,charLevel,'standard')
     await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
 })
 
@@ -455,13 +695,25 @@ bot.command('randomrolledchar', async (ctx) => {
     let msg = ctx.message.text
     let charLevel = 1
     //name
-    let reply = await getRolledChar(msg,charLevel)
+    let reply = await getStandardChar(msg,charLevel,'rolled')
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
+})
+
+bot.command('randombestchar', async (ctx) => {
+
+    await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
+    //name
+    let msg = ctx.message.text
+    let charLevel = 1
+    //name
+    let reply = await getStandardChar(msg,charLevel,'best')
     await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
 })
 
 bot.command('randomspell', async (ctx) => {
 
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
+    //TODO cachare le spells
     let spellsArray = await axios.get("http://www.dnd5eapi.co/api/spells/")
     let spell = await axios.get("http://www.dnd5eapi.co/api/spells/" + randomItem(spellsArray.data.results).index)
     spell = await getFormattedSpell(spell)
@@ -470,13 +722,9 @@ bot.command('randomspell', async (ctx) => {
 })
 
 bot.help(async ctx => {
-    await ctx.reply("This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell\n -/randomrolledchar")
+    await ctx.reply("This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell\n -/randomrolledchar\n -/randombestchar")
 })
-
-bot.start(async ctx => {
-    await ctx.reply("Welcome to OneSpellPerRound, This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell")
-})
-
+//TODO trovare la parola trigger anche all'interno delle frasi, non solo quando scritta da sola
 bot.hears(['piaga','Piaga','Reame remoto', 'Reame Remoto', 'reame remoto', 'reame Remoto','PIAGA','REAME REMOTO'],(ctx) => ctx.reply("<i>"+getRandomQuote()+"</i>",{parse_mode: "HTML"}))
 bot.hears(['adam','Adamo','Adam', 'adamo','ADAM','ADAMO'], (ctx) => ctx.reply(" ̷̫̝̟̫̫̤̐̒͒͑ͅ ̸͔͈͓̪̙͓̪̄͛̂̚͘͘͠ ̶̡̗̮̯̍ ̸̡̣̪̻̣̭̱̑̃͂̑͘ ̷̪̻̍ ̶̼͇̩̻͖͆ ̷̮͉̤̳̦̦̈́͗̈́̊̀͒ ̴͍̱͇̬̖͇́̌͆͑͝F̸͓͚̹̼̠̆͜a̵̡̬̺͔͈̤̒t̷̪͖̟̀͊̍h̷̰͙͉͍̾̾e̸̛͚̞̝̝̳̹͗͜r̷͇̟̯̉̔ ̵̙̪͛̾̄̓̅͝ͅ ̵̛̭̺̥̦̙̠͙̓͑̈ ̵̻̐̇ ̸̠͙́̃̈́̾̎̚ ̵͍̰̲̹͓̹̾ ̶̢̲̙̪̖̮͇̆̀̀͊̕͝ ̴̨̱̲̩̳̬͑͑̀̐̀͐̓ ̸̢̢̺͕̼̘̾̓͆̈́̎̏ ̷̨̣̬̰̙̝͈̑͊w̵̹͇͖̟͐͜a̵̧̬̣̩̘̓͋̿͑t̵̢̧̬̙̤͍͆̋̒̓̕͜c̶̢̢̰͈̎h̴̹̪͌̈́̋̾̾͘͠ë̵̳́̌̇̓̈̀s̴̱̞͌̿ ̷̡̹̓̊́̓̋ ̸̖͔̖̀̈́̈ ̷͕̦̜̈͗̿̿̕̕ ̶̛̠̭̺̯̟̼̙͛̅́̀ ̶͙̌ ̸̢͚̫̦̜̿̂̚ ̶̦͚̲̘̦̹̋͊́͆͆͘͝ ̴͓̮̲͒̃ ̵̛̩̣͛̏̍́ ̷̨͔̜̰̯̩͂͋̑̉͌̉͐͜y̷͎̖͙͍͖͖̌̈͑͗̄̕͝o̶̩̣͋͑͑͘͝͠u̸̩̖͓̳̱̭͚͒̃́̈́ ̷̗̗̗̐̈̏͊ͅ ̷͎̞͓̹͔̬̈͌́́̓̃ ̷̠̱͔̪̰̂̊̃̽̉͜͝ͅ ̷̧̛̱͉̬̓̐̏̈́̕͘ ̸̘̲͒\n" +
     "̷͓͍͓͐̔̔͝ͅ ̵̼̃ ̶̟̋ ̵̹̺̭͙̦̫͐̿̄ ̵̫͈̬̫̀̒̂͛͝ ̵̪̣͈̙̖͉̫̓͋͝ ̴͇͍̱͌͊̃́͜ ̶̻͈̍̃͆ ̴͈͈͂͘ ̸͉͚̬̏̒ ̴̣̘͇̦̤̬̓́̾̔̅͠͝ ̶̝̭͉̜͇͇̣̾̈́̈́́̀̌ ̴̺͛̈́̈̓͌ ̵̼̳̳͎̪̇̃̔̆͛ ̷͔̮͊͗̓͛ ̴͇̜̇̈́͛̓̉̄ ̷̨̬͙̂͜ ̶̨͓̠̫̮̹̦̈́ ̸͖͚͕̭̣̙̣̀́ ̴͙̈̑̿̊̕ ̷̳̯̖̈́́͌̎ͅ ̶̱̬͊ ̸̞̘̣̪͑̋͌͋̌͌ ̵̖̹̐ ̸̯̰̪͍̝͎̘̽̔͛ ̶̡̧̛̤͙̱̪͍̃͠ ̵̯̠͋̃͛͠ ̸̦̫̘̞̣̊̉͑ ̸̡͍̖͕̣̄̿ ̴̃͛ͅ ̴͕̈͋̽͗̊̽ ̴̛̝͖̮̞̮̹̓̄͗̄̔ ̷̩̀ ̶̫̇̇ ̶̡͓͚͔̯͗̃̀̆̆ ̴̛̗̽̀́̕͝ ̴̧̪̼̱̤̟̒̈́͐̉̈͜ ̷͉͆͂̔̑͠͠ ̴̡̣͙͎͐́̇̏̿̎͠ ̵̝̳̰̞̫̬͔̒̐ ̴̛̻͔̱͇͉͎̺̃͊̃̾͆͛ ̸̛̻̩̈́͆͋͂͐͌͜ͅ ̴̳̱͖͈̹͋̆̃̒͒̇ ̵͔̰͍̥̞̲͆́ ̵̟̯̟̖͙̎͆̒̈́̀͝͝ ̵̗͋̏ ̴̛͓́̾̈́̿͝ͅ ̸̫̺̎̈̋͐̚ ̸̟̘̓ͅ ̵̧̈́̀͐ ̷̮̱̏̕͜ ̸̪̬̎ ̵̩͕̾̈́̿͊̒ ̴͉̽̒́́̈̚͜ ̷̺͔͙̘̅͊̈́̔́ ̴͔̺͕̍͜ ̶̹̝͔͙͔̄̋ͅ ̷̘̊͑̓̊ ̸̗̹͈̜͇̩̹̇͝ ̴͈͝ ̵̧̹͓͇̱͍͌͒͗͛͐̓ͅ ̶̼̻͍̆ ̴̨̙͈̳̮̯̆̔͑̀̍\n" +
