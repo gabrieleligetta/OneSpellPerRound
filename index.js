@@ -20,6 +20,7 @@ let classesGlobal
 let scoresGlobal
 let skillsGlobal
 let backgroundsGlobal = JSON.parse(rawbackgrounds.toString())
+let traitsGlobalArray = []
 let raceGlobalArray = []
 let classGlobalArray = []
 let subracesGlobalArray = []
@@ -68,7 +69,6 @@ function removeSmallest(arr) {
     return arr.filter((_, i) => i !== index);
 }
 
-//TODO cachare la risposta formattata
 async function getFormattedReply(character) {
     let reply = "<b>NAME: </b>" + character.name
     reply += "\n<b>CLASS: </b>" + character.classe.data.name + " " + character.level + "\n"
@@ -142,7 +142,7 @@ async function getStandardChar(msg,level,mode) {
         background : background,
         proficiencies : proficiencies
         }
-  return await getFormattedReply(character);
+  return await getFormattedReply(character); //cachato
  }
 
 async function getFormattedSpell(spell) {
@@ -558,7 +558,7 @@ async function getProficiencies(background,classe,race) {
         profs = profs.map(item => item == 'animal handling' ? 'Animal Handling' : item)
     }
     if (profs.includes('sleight of hand')) {
-        profs = profs.map(item => item == 'animal handling' ? 'Sleight of Hand' : item)
+        profs = profs.map(item => item == 'sleight of hand' ? 'Sleight of Hand' : item)
     }
     let stringa = profs.toString().replace(/,/g, ", ").capitalize()
     stringa = makeUpperCaseAfterCommas(stringa)
