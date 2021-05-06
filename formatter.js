@@ -1,7 +1,7 @@
-const utils = require("./utils");
+const utils = require("./utils")
 
 module.exports = {
-    getFormattedSpell:async function(spell) {
+    getFormattedSpell:function(spell) {
         let Fspell = "<u><b>" + spell.data.name + "</b></u>\n"
         Fspell += spell.data.level + " level " + spell.data.school.name + " " + ((spell.data.ritual === true) ? '(Ritual)' : '') + "\n"
         Fspell += "<b>Casting Time: </b>" + spell.data.casting_time + "\n"

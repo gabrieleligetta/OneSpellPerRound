@@ -1,6 +1,6 @@
-const formatter = require("./formatter");
-const factory = require("./factory");
-const scoresClass = require("./scores");
+const formatter = require("./formatter")
+const factory = require("./factory")
+const scoresClass = require("./scores")
 
 
 module.exports = {

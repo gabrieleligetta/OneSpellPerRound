@@ -1,6 +1,4 @@
 const telegraf = require('telegraf')
-const axios = require('axios')
-const randomItem = require('random-item')
 //const cron = require('node-cron')
 const express = require('express')
 const path = require('path')
@@ -8,9 +6,8 @@ require('dotenv').config()
 const token = process.env.BOT_TOKEN
 const PORT = process.env.PORT || 5000
 const quotes = require("./quotes")
-const utils = require("./utils")
-const persona = require("./persona");
-const formatter = require("./formatter");
+const persona = require("./persona")
+const spell = require("./spell");
 
 //Heroku deploy port
 express()
@@ -58,13 +55,8 @@ bot.command('randombestchar', async (ctx) => {
 })
 
 bot.command('randomspell', async (ctx) => {
-
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
-    //TODO cachare le spells
-    let spellsArray = await axios.get("http://www.dnd5eapi.co/api/spells/")
-    let spell = await axios.get("http://www.dnd5eapi.co/api/spells/" + randomItem(spellsArray.data.results).index)
-    spell = await formatter.getFormattedSpell(spell)
-    let reply = utils.replyEscaper(spell)
+    let reply = await spell.getSpell('random')
     await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
 })
 
