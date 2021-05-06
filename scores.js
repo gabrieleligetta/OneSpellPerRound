@@ -1,7 +1,7 @@
-const cache = require("./cache");
-const randomItem = require("random-item");
-const utils = require("./utils");
-
+// noinspection DuplicatedCode
+const cache = require("./cache")
+const randomItem = require("random-item")
+const utils = require("./utils")
 
 function addRaceScores(race,subrace,scores) {
     race.data.ability_bonuses.forEach((ability_bonus) => {

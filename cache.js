@@ -1,11 +1,11 @@
 const axios = require("axios");
 
-
 //Global Variables caching system
-let racesGlobal
 let classesGlobal
 let scoresGlobal
 let skillsGlobal
+let spellsGlobal
+let racesGlobal
 let traitsGlobalArray = []
 //Global Variables caching system
 
@@ -49,6 +49,16 @@ module.exports = {
             //console.log('sto scaricando skills')
             skillsGlobal = await axios.get("http://www.dnd5eapi.co/api/skills/")
             return skillsGlobal
+        }
+    },
+    getSpells:async function(){
+        if (spellsGlobal) {
+            //console.log('skills cachato')
+            return spellsGlobal
+        } else {
+            //console.log('sto scaricando skills')
+            spellsGlobal = await axios.get("http://www.dnd5eapi.co/api/spells/")
+            return spellsGlobal
         }
     },
     getTraitData:async function(url) {
