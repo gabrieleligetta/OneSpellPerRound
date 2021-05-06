@@ -1,21 +1,17 @@
-
-
-
 const cache = require("./cache")
 const utils = require("./utils")
 const randomItem = require("random-item")
-const fs = require('fs');
-const axios = require("axios");
-let rawbackgrounds = fs.readFileSync('backgrounds.json')
+const fs = require('fs')
+const axios = require("axios")
 
 //Global Variables caching system
+let rawbackgrounds = fs.readFileSync('backgrounds.json')
 let backgroundsGlobal = JSON.parse(rawbackgrounds.toString())
 let classGlobalArray = []
 let raceGlobalArray = []
 let subracesGlobalArray = []
+let spellsGlobalArray = []
 //Global Variables caching system
-
-
 
 module.exports = {
     getBackground: function() {
@@ -150,6 +146,16 @@ module.exports = {
         //let race = await axios.get("http://www.dnd5eapi.co/api/races/half-elf")
 
     },
+    getSpellByIndex:async function(index) {
+        if (spellsGlobalArray[index]) {
+            //console.log('tratto cachato')
+            return spellsGlobalArray[index]
+        } else {
+            //console.log('scarico il tratto')
+            spellsGlobalArray[index] = await axios.get("http://www.dnd5eapi.co/api/spells/" + index)
+            return spellsGlobalArray[index]
+        }
+    },
     getSubrace:async function(race) {
         if (race.data.subraces.length) {
             let possibleraces = []
@@ -207,7 +213,5 @@ module.exports = {
         }
         //console.log(traitsArray)
         return traitsArray
-    },
-
-
+    }
 };
