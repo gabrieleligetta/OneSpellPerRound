@@ -123,6 +123,7 @@ module.exports = {
             case 'Ranger':
                 let rangerabi = ['DEX','STR']
                 abone = randomItem(rangerabi)
+                rangerabi =  rangerabi.filter(v => v !== abone);
                 abtwo = 'WIS'
                 abthree = randomItem(rangerabi.concat(['CON']))
                 scores[abone] = 15
