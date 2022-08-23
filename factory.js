@@ -109,10 +109,8 @@ module.exports = {
         if (profArray?.length) {
             const shuffled = profArray.sort(() => 0.5 - Math.random())
             chosenChoices = shuffled.slice(0, choose)
-        } else {
-            chosenChoices = profArray
+            chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ",""))
         }
-        chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ",""))
         if (race.data.name === 'Half-Elf') {
             let skills = await cache.getSkills()
             skills = skills.data.results
