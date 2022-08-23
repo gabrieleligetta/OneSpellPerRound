@@ -87,7 +87,7 @@ module.exports = {
                 abone = randomItem(figabi)
                 figabi = figabi.filter(v => v !== abone);
                 abtwo = randomItem(figabitwo)
-                figabitwo = figabi.filter(v => v !== abtwo);
+                figabitwo = figabitwo.filter(v => v !== abtwo);
                 abthree = randomItem(figabi.concat(figabitwo))
                 scores[abone] = 15
                 scores[abtwo] = 14
@@ -99,7 +99,7 @@ module.exports = {
             case 'Monk':
                 let monkabi = ['STR','DEX']
                 abone = randomItem(monkabi)
-                monkabi = monkabi.filter(v => v !== abone);
+                monkabi =  monkabi.filter(v => v !== abone);
                 abtwo = 'WIS'
                 abthree = randomItem(monkabi.concat(['INT','CON']))
                 scores[abone] = 15
