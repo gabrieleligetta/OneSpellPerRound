@@ -104,6 +104,9 @@ module.exports = {
         console.log("profArray")
         console.log(profArray)
         console.log("profArray")
+        console.log("choose")
+        console.log(choose)
+        console.log("choose")
         for (let prof of profs) {
             console.log("profs")
             console.log(profs)
