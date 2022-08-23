@@ -181,8 +181,6 @@ module.exports = {
                 })
                 break;
         }
-        console.log("abilitiesObjbefore")
-        console.log(abilitiesObj)
         abilitiesObj.forEach((element) => {
             let temp = randomItem(values)
             scores[element.name] = temp
@@ -191,12 +189,6 @@ module.exports = {
                 values.splice(index, 1)
             }
         })
-        console.log("abilitiesObjafter")
-        console.log(abilitiesObj)
-        console.log("classe")
-        console.log(classe?.data?.name)
-        console.log("scores")
-        console.log(scores)
         return addRaceScores(race,subrace,scores)
     },
     getRolledScores:async function(race, subrace) {
