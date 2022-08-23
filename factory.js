@@ -103,6 +103,10 @@ module.exports = {
         console.log("profArray")
         console.log(profArray)
         console.log("profArray")
+        const prova = profArray.map(element => element.item)
+        console.log("prova")
+        console.log(prova)
+        console.log("prova")
         for (let prof of profs) {
             console.log("profs")
             console.log(profs)
