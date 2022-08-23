@@ -96,14 +96,14 @@ module.exports = {
         if (classe.data.name !== 'Monk') {
             choose = classe.data.proficiency_choices[0].choose
             profArray = classe.data.proficiency_choices[0].from
-        } else {
-            choose = classe.data.proficiency_choices[2].choose
-            profArray = classe.data.proficiency_choices[2].from
         }
         profArray = profArray?.options.map(element => element?.item)
         console.log("classe")
         console.log(classe)
         console.log("classe")
+        console.log("classe.data.proficiency_choices[0]")
+        console.log(classe.data.proficiency_choices)
+        console.log("classe.data.proficiency_choices[0]")
         console.log("profArray")
         console.log(profArray)
         console.log("profArray")
