@@ -20,7 +20,7 @@ module.exports = {
     },
     removeFromArray: function(array,value) {
     let index = array.indexOf(value)
-    return array.slice(index,1)
+    return array.splice(index,1)
 },
     removeSmallest:function(arr) {
     const smallest = Math.min(...arr);
