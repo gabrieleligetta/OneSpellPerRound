@@ -20,8 +20,8 @@ module.exports = {
         let vanillaback = []
         let true_back
         backgrounds.background.forEach((element) => {
-            if (element.source == "PHB") {
-                if (element.name != "Variant Guild Artisan (Guild Merchant)") {
+            if (element.source === "PHB") {
+                if (element.name !== "Variant Guild Artisan (Guild Merchant)") {
                     //console.log(element.name)
                     vanillaback.push(element)
                 }
@@ -35,7 +35,7 @@ module.exports = {
             let feature
             let back
             for (back of vanillaback) {
-                if (back.name == true_back) {
+                if (back.name === true_back) {
                     true_back = char_background
                     char_background = back
                     if (Array.isArray(true_back._copy._mod.entries)) {
@@ -83,17 +83,17 @@ module.exports = {
     getProficiencies:async function(background,classe,race) {
         let profs = Object.keys(background.skillProficiencies[0])
         if (profs.includes('animal handling')) {
-            profs = profs.map(item => item == 'animal handling' ? 'Animal Handling' : item)
+            profs = profs.map(item => item === 'animal handling' ? 'Animal Handling' : item)
         }
         if (profs.includes('sleight of hand')) {
-            profs = profs.map(item => item == 'sleight of hand' ? 'Sleight of Hand' : item)
+            profs = profs.map(item => item === 'sleight of hand' ? 'Sleight of Hand' : item)
         }
         let stringa = profs.toString().replace(/,/g, ", ")
         stringa = stringa.charAt(0).toUpperCase() + stringa.slice(1)
         stringa = utils.makeUpperCaseAfterCommas(stringa)
         let choose
         let profArray
-        if (classe.data.name != 'Monk') {
+        if (classe.data.name !== 'Monk') {
             choose = classe.data.proficiency_choices[0].choose
             profArray = classe.data.proficiency_choices[0].from
         } else {
@@ -101,6 +101,9 @@ module.exports = {
             profArray = classe.data.proficiency_choices[2].from
         }
         for (let prof of profs) {
+            console.log("profs")
+            console.log(profs)
+            console.log("profs")
             profArray = profArray.filter(function (obj) {
                 return obj.name !== 'Skill: ' + prof.charAt(0).toUpperCase() + prof.slice(1)
             })
