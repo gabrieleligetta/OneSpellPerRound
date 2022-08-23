@@ -100,13 +100,10 @@ module.exports = {
             choose = classe.data.proficiency_choices[2].choose
             profArray = classe.data.proficiency_choices[2].from
         }
+        profArray = profArray?.options.map(element => element?.item)
         console.log("profArray")
         console.log(profArray)
         console.log("profArray")
-        const prova = profArray.options.map(element => element.item)
-        console.log("prova")
-        console.log(prova)
-        console.log("prova")
         for (let prof of profs) {
             console.log("profs")
             console.log(profs)
