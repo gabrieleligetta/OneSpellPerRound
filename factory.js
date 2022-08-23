@@ -98,22 +98,7 @@ module.exports = {
             profArray = classe.data.proficiency_choices[0].from
         }
         profArray = profArray?.options.map(element => element?.item)
-        console.log("classe")
-        console.log(classe)
-        console.log("classe")
-        console.log("classe.data.proficiency_choices[0]")
-        console.log(classe.data.proficiency_choices)
-        console.log("classe.data.proficiency_choices[0]")
-        console.log("profArray")
-        console.log(profArray)
-        console.log("profArray")
-        console.log("choose")
-        console.log(choose)
-        console.log("choose")
         for (let prof of profs) {
-            console.log("profs")
-            console.log(profs)
-            console.log("profs")
             if (profArray.length) {
                 profArray = profArray.filter(function (obj) {
                     return obj.name !== 'Skill: ' + prof.charAt(0).toUpperCase() + prof.slice(1)
