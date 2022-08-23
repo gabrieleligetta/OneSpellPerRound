@@ -83,7 +83,7 @@ module.exports = {
                 break;
             case 'Fighter':
                 let figabi = ['STR','DEX']
-                let figabitwo = ['COS','INT']
+                let figabitwo = ['CON','INT']
                 abone = randomItem(figabi)
                 figabi = figabi.filter(v => v !== abone);
                 abtwo = randomItem(figabitwo)
@@ -168,7 +168,7 @@ module.exports = {
                 })
                 break;
             case 'Wizard':
-                let wizabi = ['COS','DEX','CAR']
+                let wizabi = ['CON','DEX','CHA']
                 abone = 'INT'
                 abtwo = randomItem(wizabi)
                 wizabi = wizabi.filter(v => v !== abtwo);
