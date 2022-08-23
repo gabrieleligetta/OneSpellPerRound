@@ -100,18 +100,23 @@ module.exports = {
             choose = classe.data.proficiency_choices[2].choose
             profArray = classe.data.proficiency_choices[2].from
         }
+        console.log("profArray")
+        console.log(profArray)
+        console.log("profArray")
         for (let prof of profs) {
             console.log("profs")
             console.log(profs)
             console.log("profs")
-            profArray = profArray.filter(function (obj) {
-                return obj.name !== 'Skill: ' + prof.charAt(0).toUpperCase() + prof.slice(1)
-            })
+            if (profArray.length) {
+                profArray = profArray.filter(function (obj) {
+                    return obj.name !== 'Skill: ' + prof.charAt(0).toUpperCase() + prof.slice(1)
+                })
+            }
         }
         const shuffled = profArray.sort(() => 0.5 - Math.random())
         let chosenChoices = shuffled.slice(0, choose)
         chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ",""))
-        if (race.data.name == 'Half-Elf') {
+        if (race.data.name === 'Half-Elf') {
             let skills = await cache.getSkills()
             skills = skills.data.results
             for (let prof of chosenChoices) {
@@ -193,7 +198,7 @@ module.exports = {
         let racename
         let subracename
         if (race) {
-            if (race.data.traits.length != 0) {
+            if (race.data.traits.length !== 0) {
                 for (let trait of race.data.traits) {
                     raceTrait = await cache.getTraitData(trait.url)
                     name = raceTrait.name
@@ -204,7 +209,7 @@ module.exports = {
             }
         }
         if (subrace) {
-            if (subrace.data.racial_traits.length != 0) {
+            if (subrace.data.racial_traits.length !== 0) {
                 for (let trait of subrace.data.racial_traits) {
                     subraceTrait = await cache.getTraitData(trait.url)
                     name = subraceTrait.name
