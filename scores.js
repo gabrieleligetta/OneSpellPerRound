@@ -188,6 +188,10 @@ module.exports = {
                 values.splice(index, 1)
             }
         })
+        console.log("classe")
+        console.log(classe)
+        console.log("scores")
+        console.log(scores)
         return addRaceScores(race,subrace,scores)
     },
     getRolledScores:async function(race, subrace) {
