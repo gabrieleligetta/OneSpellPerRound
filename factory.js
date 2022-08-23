@@ -14,7 +14,7 @@ let spellsGlobalArray = []
 //Global Variables caching system
 
 module.exports = {
-    getBackground: function() {
+    getBackground: function () {
         let backgrounds = backgroundsGlobal
         //console.log(backgrounds)
         let vanillaback = []
@@ -43,19 +43,19 @@ module.exports = {
                     } else {
                         feature = true_back._copy._mod.entries.items
                     }
-                    return {true_back:true_back,feature:feature,char_background:char_background}
+                    return {true_back: true_back, feature: feature, char_background: char_background}
                 }
             }
         } else {
             let feature = char_background.entries[1]
             return {
-                true_back:char_background,
-                feature:feature,
-                char_background:char_background
+                true_back: char_background,
+                feature: feature,
+                char_background: char_background
             }
         }
     },
-    getClass:async function(charLevel) {
+    getClass: async function (charLevel) {
         let classesArray = await cache.getClasses()
         let tempClass = randomItem(classesArray.data.results).index
         let tempStore = classGlobalArray[tempClass]
@@ -65,22 +65,22 @@ module.exports = {
             return tempStore
         } else {
             //console.log('sto scaricando class')
-            classGlobalArray[tempClass] =  await axios.get("http://www.dnd5eapi.co/api/classes/" + tempClass)
+            classGlobalArray[tempClass] = await axios.get("http://www.dnd5eapi.co/api/classes/" + tempClass)
             //console.log(raceGlobalArray[tempRace])
             return classGlobalArray[tempClass]
         }
     },
-    getName:function(msg) {
-    let nameArray = msg.split(' ')
-    nameArray.shift()
-    let name = nameArray.join(' ')
-    name = name.replace(/\s+/g, ' ')
-    if (!name) {
-        name = utils.getRandomName();
-    }
-    return name
+    getName: function (msg) {
+        let nameArray = msg.split(' ')
+        nameArray.shift()
+        let name = nameArray.join(' ')
+        name = name.replace(/\s+/g, ' ')
+        if (!name) {
+            name = utils.getRandomName();
+        }
+        return name
     },
-    getProficiencies:async function(background,classe,race) {
+    getProficiencies: async function (background, classe, race) {
         let profs = Object.keys(background.skillProficiencies[0])
         if (profs.includes('animal handling')) {
             profs = profs.map(item => item === 'animal handling' ? 'Animal Handling' : item)
@@ -93,10 +93,8 @@ module.exports = {
         stringa = utils.makeUpperCaseAfterCommas(stringa)
         let choose
         let profArray
-        if (classe.data.name !== 'Monk') {
-            choose = classe.data.proficiency_choices[0].choose
-            profArray = classe.data.proficiency_choices[0].from
-        }
+        choose = classe.data.proficiency_choices[0].choose
+        profArray = classe.data.proficiency_choices[0].from
         profArray = profArray?.options.map(element => element?.item)
         for (let prof of profs) {
             if (profArray?.length) {
@@ -109,7 +107,7 @@ module.exports = {
         if (profArray?.length) {
             const shuffled = profArray.sort(() => 0.5 - Math.random())
             chosenChoices = shuffled.slice(0, choose)
-            chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ",""))
+            chosenChoices = chosenChoices.map(e => e.name.replace("Skill: ", ""))
         }
         if (race.data.name === 'Half-Elf') {
             let skills = await cache.getSkills()
@@ -126,13 +124,13 @@ module.exports = {
             }
             const shuffled2 = skills.sort(() => 0.5 - Math.random())
             let he_profs = shuffled2.slice(0, 2)
-            return{background:stringa,classe:chosenChoices.join(", "),race:he_profs.map(e => e.name).join(", ")}
+            return {background: stringa, classe: chosenChoices.join(", "), race: he_profs.map(e => e.name).join(", ")}
         } else {
-            return{background:stringa,classe:chosenChoices.join(", "),race:false}
+            return {background: stringa, classe: chosenChoices.join(", "), race: false}
         }
 
     },
-    getRace:async function() {
+    getRace: async function () {
         let racesArray = await cache.getRaces()
         let tempRace = randomItem(racesArray.data.results).index
         let tempStore = raceGlobalArray[tempRace]
@@ -142,14 +140,14 @@ module.exports = {
             return tempStore
         } else {
             //console.log('sto scaricando race')
-            raceGlobalArray[tempRace] =  await axios.get("http://www.dnd5eapi.co/api/races/" + tempRace)
+            raceGlobalArray[tempRace] = await axios.get("http://www.dnd5eapi.co/api/races/" + tempRace)
             //console.log(raceGlobalArray[tempRace])
             return raceGlobalArray[tempRace]
         }
         //let race = await axios.get("http://www.dnd5eapi.co/api/races/half-elf")
 
     },
-    getSpellByIndex:async function(index) {
+    getSpellByIndex: async function (index) {
         if (spellsGlobalArray[index]) {
             //console.log('tratto cachato')
             return spellsGlobalArray[index]
@@ -159,7 +157,7 @@ module.exports = {
             return spellsGlobalArray[index]
         }
     },
-    getSubrace:async function(race) {
+    getSubrace: async function (race) {
         if (race.data.subraces.length) {
             let possibleraces = []
             let random = Math.round(Math.random() * 10)
@@ -174,7 +172,7 @@ module.exports = {
                     return tempStore
                 } else {
                     //console.log('sto scaricando subrace')
-                    subracesGlobalArray[tempSubrace] =  await axios.get("http://www.dnd5eapi.co" + tempSubrace)
+                    subracesGlobalArray[tempSubrace] = await axios.get("http://www.dnd5eapi.co" + tempSubrace)
                     return subracesGlobalArray[tempSubrace]
                 }
             } else {
@@ -184,7 +182,7 @@ module.exports = {
             return false
         }
     },
-    getTraits:async function(race, subrace, level) {
+    getTraits: async function (race, subrace, level) {
         let traitsArray = []
         let name
         let desc
@@ -199,7 +197,7 @@ module.exports = {
                     name = raceTrait.name
                     desc = raceTrait.desc.join(' ')
                     racename = race.data.name
-                    traitsArray.push({'race':racename,'name':name,'desc':desc})
+                    traitsArray.push({'race': racename, 'name': name, 'desc': desc})
                 }
             }
         }
@@ -210,7 +208,7 @@ module.exports = {
                     name = subraceTrait.name
                     desc = subraceTrait.desc.join(' ')
                     subracename = subrace.data.name
-                    traitsArray.push({'subrace':subracename,'name':name,'desc':desc})
+                    traitsArray.push({'subrace': subracename, 'name': name, 'desc': desc})
                 }
             }
         }
