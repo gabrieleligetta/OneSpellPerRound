@@ -99,14 +99,14 @@ module.exports = {
         }
         profArray = profArray?.options.map(element => element?.item)
         for (let prof of profs) {
-            if (profArray.length) {
+            if (profArray?.length) {
                 profArray = profArray.filter(function (obj) {
                     return obj.name !== 'Skill: ' + prof.charAt(0).toUpperCase() + prof.slice(1)
                 })
             }
         }
         let chosenChoices
-        if (profArray.length) {
+        if (profArray?.length) {
             const shuffled = profArray.sort(() => 0.5 - Math.random())
             chosenChoices = shuffled.slice(0, choose)
         } else {
