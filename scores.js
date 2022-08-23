@@ -88,7 +88,7 @@ module.exports = {
                 figabi = figabi.filter(v => v !== abone);
                 abtwo = randomItem(figabitwo)
                 figabitwo = figabitwo.filter(v => v !== abtwo);
-                abthree = randomItem(figabi.concat(figabitwo))
+                abthree = randomItem([...figabi,...figabitwo])
                 scores[abone] = 15
                 scores[abtwo] = 14
                 scores[abthree] = 13
