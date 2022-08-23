@@ -103,7 +103,7 @@ module.exports = {
         console.log("profArray")
         console.log(profArray)
         console.log("profArray")
-        const prova = profArray.map(element => element.item)
+        const prova = profArray.options.map(element => element.item)
         console.log("prova")
         console.log(prova)
         console.log("prova")
