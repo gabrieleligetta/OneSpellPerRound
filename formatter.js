@@ -12,7 +12,7 @@ module.exports = {
         spell.data.classes.forEach((element,index) => ((index > 0) ? classes+=', '+element.name : classes+=element.name))
         Fspell += "<b>Classes: </b>"+ classes + "\n"
         Fspell += "<b>Description:\n</b>" + spell.data.desc + "\n"
-        Fspell += ((typeof spell.data.higher_level === 'undefined') ? '' : "<b>Higer Levels:\n</b>" + spell.data.higher_level) + "\n"
+        Fspell += ((typeof spell.data.higher_level === 'undefined' || spell?.data?.higher_level.length === 0) ? '' : "<b>Higer Levels:\n</b>" + spell.data.higher_level) + "\n"
         Fspell = utils.replyEscaper(Fspell)
         return Fspell;
     },
