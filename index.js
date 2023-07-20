@@ -10,8 +10,9 @@ const quotes = require("./quotes")
 const persona = require("./persona")
 const spell = require("./spell")
 const utils = require("./utils")
-let USERS_CACHE = [];
+let USERS_CACHE = ["481189001","-1001845883499"];
 require("./images");
+const chatgpt = require("./chatgpt");
 //Heroku deploy port
 express()
     .use(express.static(path.join(__dirname, 'public')))
@@ -65,14 +66,29 @@ bot.command('randomspell', async (ctx) => {
     await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
 })
 
+bot.command('beSilly', async (ctx) => {
+    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot e in meno di 100 parole"
+    await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
+    let reply = await chatgpt.prompt(richiesta);
+    await ctx.telegram.sendMessage(ctx.chat.id,
+        "Le avventure di Marta, la papera col cappello da strega")
+    await ctx.telegram.sendMessage(ctx.chat.id, reply)
+})
+
+
 bot.help(async ctx => {
-    await ctx.reply("This bot can do the following command:\n - /help\n - /randomchar\n - /randomspell\n -/randomrolledchar\n -/randombestchar")
+    await ctx.reply("This bot can do the following command:\n" +
+        " - /help\n" +
+        " - /randomchar\n" +
+        " - /randomspell\n" +
+        " -/randomrolledchar\n" +
+        " -/randombestchar")
 })
 
 
 //TODO spostare la funzione in un file apposito
 bot.on('text',async (ctx) => {
-    USERS_CACHE.push(ctx.chat.id);
+    // USERS_CACHE.push(ctx.chat.id);
     USERS_CACHE = [...new Set(USERS_CACHE)];
     console.log("aggiungo " + ctx.chat.id + " alla cache!");
     console.log("chache:  " + USERS_CACHE);
@@ -149,15 +165,47 @@ bot.on('text',async (ctx) => {
 })
 
 cron.schedule('0 12 * * *', async () => {
+    await beSilly();
+});
+
+cron.schedule('0 18 * * *', async () => {
+    await beSillyDiMarta();
+});
+
+const beSilly = async () => {
+    const richiesta = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
     if (USERS_CACHE.length) {
+        let battuta = await chatgpt.prompt(richiesta);
+        if (!battuta) {
+            battuta = "Oh no! Qualcosa non ha funzionato!"
+        }
         for (const chatId of USERS_CACHE) {
+            await bot.telegram.sendMessage(chatId, "Ecco la battuta cringe del giorno!")
+            await bot.telegram.sendMessage(chatId,battuta)
             await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!")
             await bot.telegram.sendChatAction(chatId, 'typing')
             let reply = await spell.getSpell('random')
             await bot.telegram.sendMessage(chatId, reply, {parse_mode: "HTML"})
         }
     }
-});
+}
+
+const beSillyDiMarta = async () => {
+    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot e in meno di 100 parole"
+    if (USERS_CACHE.length) {
+        let battuta = await chatgpt.prompt(richiesta);
+        if (!battuta) {
+            battuta = "Oh no! Qualcosa non ha funzionato!"
+        }
+        for (const chatId of USERS_CACHE) {
+            await bot.telegram.sendChatAction(chatId, 'typing')
+            let reply = await chatgpt.prompt(richiesta);
+            await bot.telegram.sendMessage(chatId,
+                "Le avventure di Marta, la papera col cappello da strega")
+            await bot.telegram.sendMessage(chatId, reply)
+        }
+    }
+}
 
 
 bot.launch()
