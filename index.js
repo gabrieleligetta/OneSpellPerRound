@@ -168,7 +168,7 @@ cron.schedule('0 12 * * *', async () => {
     await beSilly();
 });
 
-cron.schedule('30 18 * * *', async () => {
+cron.schedule('0 19 * * *', async () => {
     console.log("sono nel chron di Marta")
     await beSillyDiMarta();
 });
