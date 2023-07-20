@@ -67,7 +67,7 @@ bot.command('randomspell', async (ctx) => {
 })
 
 bot.command('beSilly', async (ctx) => {
-    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot e in meno di 200 parole"
+    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega e i suoi amici, senza che sembri la risposta di un bot e in meno di 200 parole"
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
     let reply = await chatgpt.prompt(richiesta);
     await ctx.telegram.sendMessage(ctx.chat.id,
