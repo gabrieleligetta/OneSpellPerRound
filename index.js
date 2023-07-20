@@ -10,7 +10,7 @@ const quotes = require("./quotes")
 const persona = require("./persona")
 const spell = require("./spell")
 const utils = require("./utils")
-let USERS_CACHE = ["481189001","-1001845883499"];
+let USERS_CACHE = [481189001,-1001845883499];
 require("./images");
 const chatgpt = require("./chatgpt");
 //Heroku deploy port
