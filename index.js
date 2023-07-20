@@ -4,7 +4,7 @@ const express = require('express')
 const path = require('path')
 const randomFile = require('select-random-file')
 require('dotenv').config()
-const token = process.env.BOT_TOKEN || "1468923602:AAFgyjeSroQ1aYw7VziUeqDZFBqMAmr-W4o"
+const token = process.env.BOT_TOKEN
 const PORT = process.env.PORT || 5000
 const quotes = require("./quotes")
 const persona = require("./persona")
