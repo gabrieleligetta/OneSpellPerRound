@@ -4,13 +4,13 @@ const express = require('express')
 const path = require('path')
 const randomFile = require('select-random-file')
 require('dotenv').config()
-const token = process.env.BOT_TOKEN
+const token = process.env.BOT_TOKEN || "***REMOVED***"
 const PORT = process.env.PORT || 5000
 const quotes = require("./quotes")
 const persona = require("./persona")
 const spell = require("./spell")
 const utils = require("./utils")
-const USERS_CACHE = [];
+let USERS_CACHE = [];
 require("./images");
 //Heroku deploy port
 express()
@@ -73,6 +73,9 @@ bot.help(async ctx => {
 //TODO spostare la funzione in un file apposito
 bot.on('text',async (ctx) => {
     USERS_CACHE.push(ctx.chat.id);
+    USERS_CACHE = [...new Set(USERS_CACHE)];
+    console.log("aggiungo " + ctx.chat.id + " alla cache!");
+    console.log("chache:  " + USERS_CACHE);
     let msg = ctx.message.text
     let msgArray = msg.split(' ')
     let tomoArray = ['diario','tomo','quaderno','libro']
@@ -145,7 +148,7 @@ bot.on('text',async (ctx) => {
     }
 })
 
-cron.schedule('0 12 * * ?', async () => {
+cron.schedule('0 12 * * *', async () => {
     if (USERS_CACHE.length) {
         for (const chatId of USERS_CACHE) {
             await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!")
