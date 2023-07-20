@@ -168,7 +168,7 @@ cron.schedule('0 10 * * *', async () => {
     await beSilly();
 });
 
-cron.schedule('5 17 * * *', async () => {
+cron.schedule('0 16 * * *', async () => {
     console.log("sono nel chron di Marta")
     await beSillyDiMarta();
 });
@@ -196,13 +196,12 @@ const beSillyDiMarta = async () => {
     console.log("USERS_CACHE")
     console.log(USERS_CACHE)
     if (USERS_CACHE.length) {
-        let battuta = await chatgpt.prompt(richiesta);
-        if (!battuta) {
-            battuta = "Oh no! Qualcosa non ha funzionato!"
+        let reply = await chatgpt.prompt(richiesta);
+        if (!reply) {
+            reply = "Oh no! Qualcosa non ha funzionato!"
         }
         for (const chatId of USERS_CACHE) {
             await bot.telegram.sendChatAction(chatId, 'typing')
-            let reply = await chatgpt.prompt(richiesta);
             await bot.telegram.sendMessage(chatId,
                 "Le avventure di Marta, la papera col cappello da strega")
             await bot.telegram.sendMessage(chatId, reply)
