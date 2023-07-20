@@ -168,7 +168,8 @@ cron.schedule('0 12 * * *', async () => {
     await beSilly();
 });
 
-cron.schedule('0 18 * * *', async () => {
+cron.schedule('30 18 * * *', async () => {
+    console.log("sono nel chron di Marta")
     await beSillyDiMarta();
 });
 
@@ -192,6 +193,8 @@ const beSilly = async () => {
 
 const beSillyDiMarta = async () => {
     const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot e in meno di 100 parole"
+    console.log("USERS_CACHE")
+    console.log(USERS_CACHE)
     if (USERS_CACHE.length) {
         let battuta = await chatgpt.prompt(richiesta);
         if (!battuta) {
