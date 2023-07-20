@@ -71,7 +71,7 @@ bot.command('beSilly', async (ctx) => {
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
     let reply = await chatgpt.prompt(richiesta);
     await ctx.telegram.sendMessage(ctx.chat.id,
-        "Le avventure di Marta, la papera col cappello da strega")
+        "Le avventure di Marta, la papera col cappello da strega:")
     await ctx.telegram.sendMessage(ctx.chat.id, reply)
 })
 
@@ -88,7 +88,7 @@ bot.help(async ctx => {
 
 //TODO spostare la funzione in un file apposito
 bot.on('text',async (ctx) => {
-    // USERS_CACHE.push(ctx.chat.id);
+    USERS_CACHE.push(ctx.chat.id);
     USERS_CACHE = [...new Set(USERS_CACHE)];
     console.log("aggiungo " + ctx.chat.id + " alla cache!");
     console.log("chache:  " + USERS_CACHE);
