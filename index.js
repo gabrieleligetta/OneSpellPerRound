@@ -1,5 +1,5 @@
 const telegraf = require('telegraf')
-//const cron = require('node-cron')
+const cron = require('node-cron')
 const express = require('express')
 const path = require('path')
 const randomFile = require('select-random-file')
@@ -8,11 +8,10 @@ const token = process.env.BOT_TOKEN
 const PORT = process.env.PORT || 5000
 const quotes = require("./quotes")
 const persona = require("./persona")
-const spell = require("./spell");
+const spell = require("./spell")
 const utils = require("./utils")
-const image = require("./images");
-
-
+const USERS_CACHE = [];
+require("./images");
 //Heroku deploy port
 express()
     .use(express.static(path.join(__dirname, 'public')))
@@ -73,6 +72,7 @@ bot.help(async ctx => {
 
 //TODO spostare la funzione in un file apposito
 bot.on('text',async (ctx) => {
+    USERS_CACHE.push(ctx.chat.id);
     let msg = ctx.message.text
     let msgArray = msg.split(' ')
     let tomoArray = ['diario','tomo','quaderno','libro']
@@ -85,7 +85,7 @@ bot.on('text',async (ctx) => {
     let piagaCounter = 0
     for (let word of msgArray) {
         for (let trigger of tomoArray) {
-            if (word.toLowerCase() == trigger.toLowerCase() && tomoCounter < 1) {
+            if (word.toLowerCase() === trigger.toLowerCase() && tomoCounter < 1) {
                 tomoCounter++
                 if (utils.abstractDice(1,10) <= 7 ) {
                     let dir = './tomo_imgs/'
@@ -99,7 +99,7 @@ bot.on('text',async (ctx) => {
             }
         }
         for (let trigger of araldoArray) {
-            if (word.toLowerCase() == trigger.toLowerCase() && araldoCounter<1) {
+            if (word.toLowerCase() === trigger.toLowerCase() && araldoCounter<1) {
                 araldoCounter++
                 if (utils.abstractDice(1,10) <= 6 ) {
                     let dir = './nyarla/'
@@ -113,7 +113,7 @@ bot.on('text',async (ctx) => {
             }
         }
         for (let trigger of piagaArray) {
-            if (word.toLowerCase() == trigger.toLowerCase() && piagaCounter<1) {
+            if (word.toLowerCase() === trigger.toLowerCase() && piagaCounter<1) {
                 piagaCounter++
                 if (utils.abstractDice(1, 10) <= 6) {
                     let dir = './piaga/'
@@ -121,7 +121,7 @@ bot.on('text',async (ctx) => {
                         let messagePromise = ctx.replyWithPhoto({source: dir + file})
                     })
                 } else {
-                    if (word.toLowerCase() == trigger.toLowerCase()) {
+                    if (word.toLowerCase() === trigger.toLowerCase()) {
                         let messagePromise = ctx.reply("<i>" + quotes.getRandomQuote() + "</i>", {parse_mode: "HTML"})
                         console.log(messagePromise)
                     }
@@ -129,7 +129,7 @@ bot.on('text',async (ctx) => {
             }
         }
         for (let trigger of fatherArray) {
-            if (word.toLowerCase() == trigger.toLowerCase() && fatherCounter<1) {
+            if (word.toLowerCase() === trigger.toLowerCase() && fatherCounter<1) {
                 fatherCounter++
                 if (utils.abstractDice(1,10) <= 8 ) {
                     let dir = './padre/galassie/'
@@ -144,6 +144,17 @@ bot.on('text',async (ctx) => {
 
     }
 })
+
+cron.schedule('0 12 * * ?', async () => {
+    if (USERS_CACHE.length) {
+        for (const chatId of USERS_CACHE) {
+            await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!")
+            await bot.telegram.sendChatAction(chatId, 'typing')
+            let reply = await spell.getSpell('random')
+            await bot.telegram.sendMessage(chatId, reply, {parse_mode: "HTML"})
+        }
+    }
+});
 
 
 bot.launch()
