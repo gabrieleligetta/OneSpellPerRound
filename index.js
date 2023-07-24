@@ -13,6 +13,10 @@ const utils = require("./utils")
 let USERS_CACHE = [481189001,-1001845883499];
 require("./images");
 const chatgpt = require("./chatgpt");
+const {generateMartaPrompt} = require("./chatgpt");
+const {generateEpisodeFormat} = require("./chatgpt");
+const {Prompts} = require("./utils");
+let MARTA_EPISODE_PROMPT = null;
 //Heroku deploy port
 express()
     .use(express.static(path.join(__dirname, 'public')))
@@ -29,12 +33,9 @@ const bot = new telegraf(token)
 bot.command('randomchar', async (ctx) => {
 
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
-    //name
     let msg = ctx.message.text
     let charLevel = 1
-    //name
     let reply = await persona.getStandardChar(msg,charLevel,'standard')
-    //console.log(traitsGlobalArray)
     await ctx.telegram.sendMessage(ctx.chat.id, reply, {parse_mode: "HTML"})
 })
 
@@ -67,9 +68,19 @@ bot.command('randomspell', async (ctx) => {
 })
 
 bot.command('beSilly', async (ctx) => {
-    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega e i suoi amici, senza che sembri la risposta di un bot e in meno di 200 parole"
+    if (!MARTA_EPISODE_PROMPT) {
+        MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+        console.log("MARTA_EPISODE_PROMPT")
+        console.log(MARTA_EPISODE_PROMPT)
+    }
+    console.log("sono nel beSilly")
+    console.log("MARTA_EPISODE_PROMPT")
+    console.log(MARTA_EPISODE_PROMPT)
+    const richiesta = generateMartaPrompt(MARTA_EPISODE_PROMPT);
+    console.log("richiesta")
+    console.log(richiesta)
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
-    let reply = await chatgpt.prompt(richiesta);
+    let reply = await chatgpt.prompt({text: richiesta, temperature: 1.1}, Prompts.MartaLaPapera);
     await ctx.telegram.sendMessage(ctx.chat.id,
         "Le avventure di Marta, la papera col cappello da strega:")
     await ctx.telegram.sendMessage(ctx.chat.id, reply)
@@ -77,7 +88,7 @@ bot.command('beSilly', async (ctx) => {
 
 
 bot.help(async ctx => {
-    await ctx.reply("This bot can do the following command:\n" +
+    await ctx.reply("This bot can do the following commands:\n" +
         " - /help\n" +
         " - /randomchar\n" +
         " - /randomspell\n" +
@@ -176,7 +187,7 @@ cron.schedule('0 16 * * *', async () => {
 const beSilly = async () => {
     const richiesta = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
     if (USERS_CACHE.length) {
-        let battuta = await chatgpt.prompt(richiesta);
+        let battuta = await chatgpt.prompt({text: richiesta, temperature: 1.1},Prompts.BattuteDnD);
         if (!battuta) {
             battuta = "Oh no! Qualcosa non ha funzionato!"
         }
@@ -192,11 +203,18 @@ const beSilly = async () => {
 }
 
 const beSillyDiMarta = async () => {
-    const richiesta = "rispondimi solo con l'ennesima avventura di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot e in meno di 100 parole"
-    console.log("USERS_CACHE")
-    console.log(USERS_CACHE)
+    if (!MARTA_EPISODE_PROMPT) {
+        MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+        console.log("MARTA_EPISODE_PROMPT")
+        console.log(MARTA_EPISODE_PROMPT)
+    }
+    console.log("beSillyDiMarta")
+    console.log(richiesta)
+    const richiesta = generateMartaPrompt(MARTA_EPISODE_PROMPT);
+    console.log("richiesta")
+    console.log(richiesta)
     if (USERS_CACHE.length) {
-        let reply = await chatgpt.prompt(richiesta);
+        let reply = await chatgpt.prompt({text: richiesta, temperature: 1.1}, Prompts.MartaLaPapera);
         if (!reply) {
             reply = "Oh no! Qualcosa non ha funzionato!"
         }
