@@ -96,6 +96,67 @@ bot.help(async ctx => {
         " -/randombestchar")
 })
 
+cron.schedule('0 10 * * *', async () => {
+    await randomSpellBroadcast();
+});
+
+cron.schedule('0 16 * * *', async () => {
+    console.log("sono nel chron di Marta")
+    await raccontoDiMartaBroadcast();
+});
+
+cron.schedule('0 1 * * *', async () => {
+    console.log("sono nel chron di MARTA_EPISODE_PROMPT")
+    MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+    console.log("MARTA_EPISODE_PROMPT")
+    console.log(MARTA_EPISODE_PROMPT)
+});
+
+const randomSpellBroadcast = async () => {
+    const richiesta = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
+    if (USERS_CACHE.length) {
+        let battuta = await chatgpt.prompt({text: richiesta, temperature: 1.1},Prompts.BattuteDnD);
+        if (!battuta) {
+            battuta = "Oh no! Qualcosa non ha funzionato!"
+        }
+        for (const chatId of USERS_CACHE) {
+            await bot.telegram.sendMessage(chatId, "Ecco la battuta cringe del giorno!")
+            await bot.telegram.sendMessage(chatId,battuta)
+            await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!")
+            await bot.telegram.sendChatAction(chatId, 'typing')
+            let reply = await spell.getSpell('random')
+            await bot.telegram.sendMessage(chatId, reply, {parse_mode: "HTML"})
+        }
+    }
+}
+
+const raccontoDiMartaBroadcast = async () => {
+    console.log("sono nel raccontoDiMartaBroadcast")
+    if (!MARTA_EPISODE_PROMPT) {
+        MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+        console.log("MARTA_EPISODE_PROMPT")
+        console.log(MARTA_EPISODE_PROMPT)
+    }
+    console.log("MARTA_EPISODE_PROMPT")
+    console.log(MARTA_EPISODE_PROMPT)
+    const richiesta = generateMartaPrompt(MARTA_EPISODE_PROMPT);
+    console.log("richiesta")
+    console.log(richiesta)
+    console.log("USERS_CACHE")
+    console.log(USERS_CACHE)
+    if (USERS_CACHE.length) {
+        let reply = await chatgpt.prompt({text: richiesta, temperature: 1.0}, Prompts.MartaLaPapera);
+        if (!reply) {
+            reply = "Oh no! Qualcosa non ha funzionato!"
+        }
+        for (const chatId of USERS_CACHE) {
+            await bot.telegram.sendChatAction(chatId, 'typing')
+            await bot.telegram.sendMessage(chatId,
+                "Le avventure di Marta, la papera col cappello da strega")
+            await bot.telegram.sendMessage(chatId, reply)
+        }
+    }
+}
 
 //TODO spostare la funzione in un file apposito
 bot.on('text',async (ctx) => {
@@ -164,8 +225,8 @@ bot.on('text',async (ctx) => {
                 if (utils.abstractDice(1,10) <= 8 ) {
                     let dir = './padre/galassie/'
                     randomFile(dir, (err, file) => {
-                    ctx.replyWithPhoto({source: dir + file} , { caption: "<b> ̴͉̰̯̎͑͋ ̶̹̇̑ ̵̜̞̭̏ ̸̣̺́̇ ̷͈͕̪͉̀͠ ̶̦͖́͌ ̷̝͕͚̍ ̵̱̼͗̎̃̒ ̸̭̍̍̚ ̵̨͈̠̓̊͆ ̵̜̥̔̔ ̷͚͠ ̴̛̙̥́̔́ ̸̠̌̒̐͛ ̶̮̼͋̾͝ ̷̧͚̭̖̅̒F̴̠͈̻̈͜ā̶̞͙͈͛́t̶͉̀̔h̴̨̩̲̙͂̍͐e̸̡͈̥̯̒͑r̴͕͈̗͠ͅ ̶̹̬͍̟̅́̈́͝ǐ̸͇̹̝ṣ̴̤̥̄ ̸̲̱̫͝w̶̛̘̠̭̥͌a̷̺͚͚̮͌͛͒̒t̶̠̤̓c̸̮͔̐͠h̵̜͌̑͝i̶̞͓̿̔n̴̬̤̦̾̿͜͝g̴̨̰̃̄ ̷̠͔̩̫̀̓ ̶̖͔̖̺͠ ̴̤͘ͅ ̵̬̳̞̖̓̀̀̿ ̶̞̲̋̈́̈́ ̴̬̙̞̝̿ ̴̨̛̤͓ ̶͎͎̰͎̆ ̶͈͠ ̸̭̘̬̎́ ̷̤̗̯͈͊͐ ̵̞̖̍͝ ̸̜͚̱̺̇ ̷̢͎̼̥̀̚ ̶̡̖̜̀͌͝ ̵̻͖̪̘̒͌̊͝ ̴̧͈̎ ̸̬̓ ̵̧̝̫̉͐̄͠ ̶̧̠͔͉̈́͆̚</b>" ,parse_mode: "HTML"})
-                })
+                        ctx.replyWithPhoto({source: dir + file} , { caption: "<b> ̴͉̰̯̎͑͋ ̶̹̇̑ ̵̜̞̭̏ ̸̣̺́̇ ̷͈͕̪͉̀͠ ̶̦͖́͌ ̷̝͕͚̍ ̵̱̼͗̎̃̒ ̸̭̍̍̚ ̵̨͈̠̓̊͆ ̵̜̥̔̔ ̷͚͠ ̴̛̙̥́̔́ ̸̠̌̒̐͛ ̶̮̼͋̾͝ ̷̧͚̭̖̅̒F̴̠͈̻̈͜ā̶̞͙͈͛́t̶͉̀̔h̴̨̩̲̙͂̍͐e̸̡͈̥̯̒͑r̴͕͈̗͠ͅ ̶̹̬͍̟̅́̈́͝ǐ̸͇̹̝ṣ̴̤̥̄ ̸̲̱̫͝w̶̛̘̠̭̥͌a̷̺͚͚̮͌͛͒̒t̶̠̤̓c̸̮͔̐͠h̵̜͌̑͝i̶̞͓̿̔n̴̬̤̦̾̿͜͝g̴̨̰̃̄ ̷̠͔̩̫̀̓ ̶̖͔̖̺͠ ̴̤͘ͅ ̵̬̳̞̖̓̀̀̿ ̶̞̲̋̈́̈́ ̴̬̙̞̝̿ ̴̨̛̤͓ ̶͎͎̰͎̆ ̶͈͠ ̸̭̘̬̎́ ̷̤̗̯͈͊͐ ̵̞̖̍͝ ̸̜͚̱̺̇ ̷̢͎̼̥̀̚ ̶̡̖̜̀͌͝ ̵̻͖̪̘̒͌̊͝ ̴̧͈̎ ̸̬̓ ̵̧̝̫̉͐̄͠ ̶̧̠͔͉̈́͆̚</b>" ,parse_mode: "HTML"})
+                    })
                 } else {
                     await ctx.reply(quotes.getFatherQuote())
                 }
@@ -174,58 +235,6 @@ bot.on('text',async (ctx) => {
 
     }
 })
-
-cron.schedule('0 10 * * *', async () => {
-    await beSilly();
-});
-
-cron.schedule('0 16 * * *', async () => {
-    console.log("sono nel chron di Marta")
-    await beSillyDiMarta();
-});
-
-const beSilly = async () => {
-    const richiesta = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
-    if (USERS_CACHE.length) {
-        let battuta = await chatgpt.prompt({text: richiesta, temperature: 1.1},Prompts.BattuteDnD);
-        if (!battuta) {
-            battuta = "Oh no! Qualcosa non ha funzionato!"
-        }
-        for (const chatId of USERS_CACHE) {
-            await bot.telegram.sendMessage(chatId, "Ecco la battuta cringe del giorno!")
-            await bot.telegram.sendMessage(chatId,battuta)
-            await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!")
-            await bot.telegram.sendChatAction(chatId, 'typing')
-            let reply = await spell.getSpell('random')
-            await bot.telegram.sendMessage(chatId, reply, {parse_mode: "HTML"})
-        }
-    }
-}
-
-const beSillyDiMarta = async () => {
-    if (!MARTA_EPISODE_PROMPT) {
-        MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-        console.log("MARTA_EPISODE_PROMPT")
-        console.log(MARTA_EPISODE_PROMPT)
-    }
-    console.log("beSillyDiMarta")
-    console.log(richiesta)
-    const richiesta = generateMartaPrompt(MARTA_EPISODE_PROMPT);
-    console.log("richiesta")
-    console.log(richiesta)
-    if (USERS_CACHE.length) {
-        let reply = await chatgpt.prompt({text: richiesta, temperature: 1.1}, Prompts.MartaLaPapera);
-        if (!reply) {
-            reply = "Oh no! Qualcosa non ha funzionato!"
-        }
-        for (const chatId of USERS_CACHE) {
-            await bot.telegram.sendChatAction(chatId, 'typing')
-            await bot.telegram.sendMessage(chatId,
-                "Le avventure di Marta, la papera col cappello da strega")
-            await bot.telegram.sendMessage(chatId, reply)
-        }
-    }
-}
 
 
 bot.launch()
