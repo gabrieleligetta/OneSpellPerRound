@@ -1,7 +1,45 @@
 const faker = require('faker')
 
-module.exports = {
+const Prompts = {
+    MartaLaPapera: "MartaLaPapera",
+    BattuteDnD: "BattuteDnD",
+}
 
+function extractStringBetweenCharacters(inputString, char1, char2) {
+    const regex = new RegExp(`${char1}.*?${char2}`);
+    const result = inputString.match(regex);
+
+    return result ? result[0] : null;
+}
+
+function getRandomElementsFromArray(arr, number) {
+    if (!Array.isArray(arr) || typeof number !== 'number' || number < 1) {
+        throw new Error('Invalid input. The first argument should be an array, and the second argument should be a positive number.');
+    }
+
+    if (arr.length <= 2) {
+        throw new Error('The input array should have at least two elements.');
+    }
+
+    const selectedElements = [];
+
+    while (selectedElements.length < 2) {
+        const randomIndex = Math.floor(Math.random() * arr.length);
+        const randomElement = arr[randomIndex];
+
+        if (!selectedElements.includes(randomElement)) {
+            selectedElements.push(randomElement);
+            arr = arr.filter(el => el !== randomElement)
+        }
+    }
+
+    return selectedElements;
+}
+
+module.exports = {
+    Prompts,
+    extractStringBetweenCharacters,
+    getRandomElementsFromArray,
     getRandomName:function() {
     return faker.name.findName();
     },
