@@ -15,7 +15,7 @@ require("./images");
 const chatgpt = require("./chatgpt");
 const {generateMartaPrompt} = require("./chatgpt");
 const {generateEpisodeFormat} = require("./chatgpt");
-const {Prompts} = require("./utils");
+const {Prompts, chunk} = require("./utils");
 let MARTA_EPISODE_PROMPT = null;
 //Heroku deploy port
 express()
@@ -83,7 +83,9 @@ bot.command('beSilly', async (ctx) => {
     let reply = await chatgpt.prompt({text: richiesta, temperature: 1.1}, Prompts.MartaLaPapera);
     await ctx.telegram.sendMessage(ctx.chat.id,
         "Le avventure di Marta, la papera col cappello da strega:")
-    await ctx.telegram.sendMessage(ctx.chat.id, reply)
+    for (const part of chunk(reply, 4096)) {
+        await ctx.telegram.sendMessage(ctx.chat.id,part);
+    }
 })
 
 
@@ -153,7 +155,9 @@ const raccontoDiMartaBroadcast = async () => {
             await bot.telegram.sendChatAction(chatId, 'typing')
             await bot.telegram.sendMessage(chatId,
                 "Le avventure di Marta, la papera col cappello da strega")
-            await bot.telegram.sendMessage(chatId, reply)
+            for (const part of chunk(reply, 4096)) {
+                await bot.sendMessage(chatId, part);
+            }
         }
     }
 }
