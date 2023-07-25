@@ -9,12 +9,14 @@ async function prompt (richiesta, type= null) {
     if (type === Prompts.MartaLaPapera) {
         messages.push({"role": "system", "content": "Sei l'autore dei libri di 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici, in un atmosfera a metà bambinesca e a metà Lovecraftiana"})
     } else if (type === Prompts.BattuteDnD) {
-        messages.push({"role": "system", "content": "You are a funny comedian who tells dad jokes about Dungeon and Dragons."})
+        messages.push({"role": "system", "content": "Sei un comico affermato che ritorna freddure a tema fantasy"})
+    } else if (type === Prompts.EpisodePromptValues) {
+        messages.push({"role": "system", "content": "Sei un l'assistente di uno sviluppatore che ha bisogno di risultati che tornano sempre alla stessa maniera, Ritornali in una stringa racchiusa tra due #, separati da virgola senza altro testo"})
     }
     messages.push({"role": "user", "content": richiesta.text});
     const apiKey = process.env.CHATGPT_API_KEY
     const data = {
-        "model": "gpt-3.5-turbo-16k",
+        "model": "gpt-3.5-turbo",
         "messages": messages,
         "temperature": richiesta.temperature || 1
     };
@@ -96,21 +98,31 @@ const generateEpisodeFormat = async () => {
     const place = randomItem(await generateArrayOf("Luoghi", lore));
     return {
         episodeFormat: randomItem(["autoconclusivo"]),
-        enemy: randomItem(await generateArrayOf("Antagonista", lore)),
+        enemy: randomItem(await generateArrayOf("Antagonisti", lore)),
         supportCharacters: getRandomElementsFromArray(await generateArrayOf("Animaletti del bosco con nome, soprannome e aggettivo", "Amici di Marta la Papera col cappello da Strega, esempio: 'Lucia la gatta ballerina'"), Math.floor(Math.random() * 2) +1),
-        event: randomItem(await generateArrayOf("Evento", fantasy)),
+        event: randomItem(await generateArrayOf("Eventi", fantasy)),
         place: randomItem(await generateArrayOf("Luoghi", fantasy)),
         trialOfHeroes: randomItem(await generateArrayOf("Sfide da eroi", place)),
         spells: getRandomElementsFromArray(await generateArrayOf("Incantesimi", "Dungeons and Dragons"), 4),
     }
 }
 
+const getStringBetweenHashes = (input) => (input.match(/#(.*?)#/) || [])[1] || null;
+
 const generateArrayOf = async (narrationElement,lore) => {
-    const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali in una stringa, separati da virgola senza che sembri la risposta di un bot`;
-    const messageWithArray = await daVinciPrompt({text:promptText, temperature: 0.7});
-    console.log("messageWithArray")
-    console.log(messageWithArray)
-    const textArray = messageWithArray.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
+    let stringBetweenHashes = null;
+    while (!stringBetweenHashes) {
+        const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali in una stringa racchiusa tra due #, separati da virgola senza altro testo`;
+        const messageWithArray = await prompt({text:promptText, temperature: 0.7}, Prompts.EpisodePromptValues);
+        console.log("messageWithArray")
+        console.log(messageWithArray)
+
+        stringBetweenHashes = getStringBetweenHashes(messageWithArray);
+        console.log("stringBetweenHashes")
+        console.log(stringBetweenHashes)
+    }
+
+    const textArray = stringBetweenHashes.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
     console.log("textArray")
     console.log(textArray)
     return textArray;
