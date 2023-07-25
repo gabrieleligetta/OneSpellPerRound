@@ -16,7 +16,7 @@ async function prompt (richiesta, type= null) {
     messages.push({"role": "user", "content": richiesta.text});
     const apiKey = process.env.CHATGPT_API_KEY
     const data = {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-3.5-turbo-16k",
         "messages": messages,
         "temperature": richiesta.temperature || 1
     };
@@ -75,16 +75,18 @@ const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
             prompt +=` gli amici di Marta saranno: ${MARTA_EPISODE_PROMPT.supportCharacters.join(", ")}. `
         }
         if (MARTA_EPISODE_PROMPT?.event) {
-            prompt +=` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causata da ${MARTA_EPISODE_PROMPT.event}. `
+            prompt +=` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causata da ${MARTA_EPISODE_PROMPT.enemy}. `
         }
         if (MARTA_EPISODE_PROMPT?.place) {
             prompt +=` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.place}. `
         }
         if (MARTA_EPISODE_PROMPT?.trialOfHeroes) {
-            prompt +=` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes}. `
+            prompt +=` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes} con descrizione di come viene superata. `
         }
         if (MARTA_EPISODE_PROMPT?.spells) {
-            prompt +=` gli incantesimi utilizzati saranno: ${MARTA_EPISODE_PROMPT.spells.join(", ")}. `
+            prompt +=` gli incantesimi utilizzati da marta e gli amici saranno: ${MARTA_EPISODE_PROMPT.spells.join(", ")}. `
+        }        if (MARTA_EPISODE_PROMPT?.spells) {
+            prompt +=` gli incantesimi utilizzati da ${MARTA_EPISODE_PROMPT.enemy} saranno: ${MARTA_EPISODE_PROMPT.enemySpells.join(", ")}. `
         }
     }
 
@@ -106,6 +108,7 @@ const generateEpisodeFormat = async () => {
         place: place,
         trialOfHeroes: randomItem(await generateArrayOf("Sfide da eroi", `causati da ${enemy} nel luogo ${place} per superare ${event}`)),
         spells: getRandomElementsFromArray(await generateArrayOf("Incantesimi", "Dungeons and Dragons"), 4),
+        enemySpells: getRandomElementsFromArray(await generateArrayOf("Incantesimi", "Dungeons and Dragons"), 2),
     }
 }
 
@@ -114,7 +117,7 @@ const getStringBetweenHashes = (input) => (input.match(/#(.*?)#/) || [])[1] || n
 const generateArrayOf = async (narrationElement,lore) => {
     let stringBetweenHashes = null;
     let textArray = [];
-    while (!stringBetweenHashes || textArray.length < 2) {
+    while (!stringBetweenHashes || textArray.length < 4) {
         const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #`;
         const messageWithArray = await prompt({text:promptText, temperature: 0.7}, Prompts.EpisodePromptValues);
         console.log("messageWithArray")
