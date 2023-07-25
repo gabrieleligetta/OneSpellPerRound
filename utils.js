@@ -37,10 +37,29 @@ function getRandomElementsFromArray(arr, number) {
     return selectedElements;
 }
 
+const removeCharExceptFirstAndLast = (inputString, character) => {
+    const firstIndex = inputString.indexOf(character);
+    const lastIndex = inputString.lastIndexOf(character);
+
+    if (firstIndex === -1 || firstIndex === lastIndex) {
+        return inputString;
+    }
+
+    const charactersToRemove = inputString.slice(firstIndex + 1, lastIndex).split(character).join('');
+    return inputString.slice(0, firstIndex + 1) + charactersToRemove + inputString.slice(lastIndex);
+}
+
+const chunk = (str, size) =>
+    Array.from({ length: Math.ceil(str.length / size) }, (v, i) =>
+        str.slice(i * size, i * size + size)
+    );
+
 module.exports = {
     Prompts,
     extractStringBetweenCharacters,
+    chunk,
     getRandomElementsFromArray,
+    removeCharExceptFirstAndLast,
     getRandomName:function() {
     return faker.name.findName();
     },
