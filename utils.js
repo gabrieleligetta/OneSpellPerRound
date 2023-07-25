@@ -24,7 +24,7 @@ function getRandomElementsFromArray(arr, number) {
 
     const selectedElements = [];
 
-    while (selectedElements.length < 2) {
+    while (selectedElements.length < number) {
         const randomIndex = Math.floor(Math.random() * arr.length);
         const randomElement = arr[randomIndex];
 
