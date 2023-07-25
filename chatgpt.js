@@ -126,9 +126,11 @@ const generateArrayOf = async (narrationElement,lore) => {
         stringBetweenHashes = getStringBetweenHashes(messageWithArray);
         console.log("stringBetweenHashes")
         console.log(stringBetweenHashes)
-        textArray = stringBetweenHashes.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
-        console.log("textArray")
-        console.log(textArray)
+        if (!!stringBetweenHashes) {
+            textArray = stringBetweenHashes.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
+            console.log("textArray")
+            console.log(textArray)
+        }
     }
     return textArray;
 }
