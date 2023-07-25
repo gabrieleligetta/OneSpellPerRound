@@ -96,13 +96,15 @@ const generateEpisodeFormat = async () => {
     const lore = randomItem(loreArray);
     const fantasy = 'fantasy';
     const place = randomItem(await generateArrayOf("Luoghi", lore));
+    const enemy = randomItem(await generateArrayOf("Antagonisti", lore))
+    const event = randomItem(await generateArrayOf("Eventi", `causati da ${enemy} nel luogo ${place}`))
     return {
         episodeFormat: randomItem(["autoconclusivo"]),
-        enemy: randomItem(await generateArrayOf("Antagonisti", lore)),
+        enemy: enemy,
         supportCharacters: getRandomElementsFromArray(await generateArrayOf("Animaletti del bosco con nome, soprannome e aggettivo", "Amici di Marta la Papera col cappello da Strega, esempio: 'Lucia la gatta ballerina'"), Math.floor(Math.random() * 2) +1),
-        event: randomItem(await generateArrayOf("Eventi", fantasy)),
-        place: randomItem(await generateArrayOf("Luoghi", fantasy)),
-        trialOfHeroes: randomItem(await generateArrayOf("Sfide da eroi", place)),
+        event: event,
+        place: place,
+        trialOfHeroes: randomItem(await generateArrayOf("Sfide da eroi", `causati da ${enemy} nel luogo ${place} per superare ${event}`)),
         spells: getRandomElementsFromArray(await generateArrayOf("Incantesimi", "Dungeons and Dragons"), 4),
     }
 }
