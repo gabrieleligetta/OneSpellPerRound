@@ -104,7 +104,7 @@ const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
 }
 
 const generateEpisodeFormat = async () => {
-    const loreArray = ["Lovecraft","Dungeons and Dragons"]
+    const loreArray = ["Dungeons and Dragons"]
     const lore = randomItem(loreArray);
     const fantasy = 'fantasy';
     const boss = randomItem(await generateArrayOf("Antagonisti con grande potere o divinità", lore));
