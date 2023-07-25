@@ -11,7 +11,7 @@ async function prompt (richiesta, type= null) {
     } else if (type === Prompts.BattuteDnD) {
         messages.push({"role": "system", "content": "Sei un comico affermato che ritorna freddure a tema fantasy"})
     } else if (type === Prompts.EpisodePromptValues) {
-        messages.push({"role": "system", "content": "Sei un l'assistente di uno sviluppatore che ha bisogno di risultati che tornano sempre alla stessa maniera, Ritornali in una stringa racchiusa tra due #, separati da virgola senza altro testo"})
+        messages.push({"role": "system", "content": "Sei un l'assistente di uno sviluppatore che ha bisogno di risultati che tornano sempre alla stessa maniera, Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #"})
     }
     messages.push({"role": "user", "content": richiesta.text});
     const apiKey = process.env.CHATGPT_API_KEY
@@ -75,7 +75,7 @@ const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
             prompt +=` gli amici di Marta saranno: ${MARTA_EPISODE_PROMPT.supportCharacters.join(", ")}. `
         }
         if (MARTA_EPISODE_PROMPT?.event) {
-            prompt +=` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event}. `
+            prompt +=` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causata da ${MARTA_EPISODE_PROMPT.event}. `
         }
         if (MARTA_EPISODE_PROMPT?.place) {
             prompt +=` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.place}. `
@@ -101,7 +101,7 @@ const generateEpisodeFormat = async () => {
     return {
         episodeFormat: randomItem(["autoconclusivo"]),
         enemy: enemy,
-        supportCharacters: getRandomElementsFromArray(await generateArrayOf("Animaletti del bosco con nome, soprannome e aggettivo", "Amici di Marta la Papera col cappello da Strega, esempio: 'Lucia la gatta ballerina'"), Math.floor(Math.random() * 2) +1),
+        supportCharacters: getRandomElementsFromArray(await generateArrayOf("Animaletti del bosco con nome, soprannome e aggettivo", "Amici di Marta la Papera col cappello da Strega, esempio: 'Lucia la gatta ballerina'"), Math.floor(Math.random() * 4)),
         event: event,
         place: place,
         trialOfHeroes: randomItem(await generateArrayOf("Sfide da eroi", `causati da ${enemy} nel luogo ${place} per superare ${event}`)),
@@ -113,8 +113,9 @@ const getStringBetweenHashes = (input) => (input.match(/#(.*?)#/) || [])[1] || n
 
 const generateArrayOf = async (narrationElement,lore) => {
     let stringBetweenHashes = null;
-    while (!stringBetweenHashes) {
-        const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali in una stringa racchiusa tra due #, separati da virgola senza altro testo`;
+    let textArray = [];
+    while (!stringBetweenHashes || textArray.length < 2) {
+        const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #`;
         const messageWithArray = await prompt({text:promptText, temperature: 0.7}, Prompts.EpisodePromptValues);
         console.log("messageWithArray")
         console.log(messageWithArray)
@@ -122,11 +123,10 @@ const generateArrayOf = async (narrationElement,lore) => {
         stringBetweenHashes = getStringBetweenHashes(messageWithArray);
         console.log("stringBetweenHashes")
         console.log(stringBetweenHashes)
+        textArray = stringBetweenHashes.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
+        console.log("textArray")
+        console.log(textArray)
     }
-
-    const textArray = stringBetweenHashes.split(",").map(element => element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, ""))
-    console.log("textArray")
-    console.log(textArray)
     return textArray;
 }
 
