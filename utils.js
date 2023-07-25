@@ -3,6 +3,7 @@ const faker = require('faker')
 const Prompts = {
     MartaLaPapera: "MartaLaPapera",
     BattuteDnD: "BattuteDnD",
+    EpisodePromptValues: "EpisodePromptValues",
 }
 
 function extractStringBetweenCharacters(inputString, char1, char2) {
