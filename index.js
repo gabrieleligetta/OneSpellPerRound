@@ -91,6 +91,13 @@ bot.command('bSB', async (ctx) => {
     await raccontoDiMartaBroadcast();
 })
 
+bot.command('PromptUpdate', async (ctx) => {
+    MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+    console.log("MARTA_EPISODE_PROMPT")
+    console.log(MARTA_EPISODE_PROMPT)
+    await ctx.telegram.sendMessage(ctx.chat.id,JSON.stringify(MARTA_EPISODE_PROMPT));
+})
+
 
 bot.help(async ctx => {
     await ctx.reply("This bot can do the following commands:\n" +
