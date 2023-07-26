@@ -112,7 +112,7 @@ cron.schedule('0 10 * * *', async () => {
     await randomSpellBroadcast();
 });
 
-cron.schedule('30 16 * * *', async () => {
+cron.schedule('0 17 * * *', async () => {
     console.log("sono nel chron di Marta")
     await raccontoDiMartaBroadcast();
 });
