@@ -115,7 +115,7 @@ cron.schedule('0 1 * * *', async () => {
 });
 
 const randomSpellBroadcast = async () => {
-    const richiesta = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
+    const richiesta = "rispondimi solo con una battuta divertente a tema fantasy senza che sembri la risposta di un bot"
     if (USERS_CACHE.length) {
         let battuta = await chatgpt.prompt({text: richiesta, temperature: 1.1},Prompts.BattuteDnD);
         if (!battuta) {
