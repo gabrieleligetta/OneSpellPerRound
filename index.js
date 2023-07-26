@@ -166,7 +166,7 @@ const raccontoDiMartaBroadcast = async () => {
             await bot.telegram.sendMessage(chatId,
                 "Le avventure di Marta, la papera col cappello da strega")
             for (const part of chunk(reply, 4096)) {
-                await bot.sendMessage(chatId, part);
+                await bot.telegram.sendMessage(chatId, part);
             }
         }
     }
