@@ -80,7 +80,7 @@ bot.command('beSilly', async (ctx) => {
     console.log("richiesta")
     console.log(richiesta)
     await ctx.telegram.sendChatAction(ctx.chat.id, 'typing')
-    let reply = await chatgpt.prompt({text: richiesta, temperature: 1.1}, Prompts.MartaLaPapera);
+    let reply = await chatgpt.prompt({text: richiesta, temperature: 1.0}, Prompts.MartaLaPapera, "gpt-3.5-turbo-16k");
     await ctx.telegram.sendMessage(ctx.chat.id,
         "Le avventure di Marta, la papera col cappello da strega:")
     for (const part of chunk(reply, 4096)) {
@@ -147,7 +147,7 @@ const raccontoDiMartaBroadcast = async () => {
     console.log("USERS_CACHE")
     console.log(USERS_CACHE)
     if (USERS_CACHE.length) {
-        let reply = await chatgpt.prompt({text: richiesta, temperature: 1.0}, Prompts.MartaLaPapera);
+        let reply = await chatgpt.prompt({text: richiesta, temperature: 1.0}, Prompts.MartaLaPapera, "gpt-3.5-turbo-16k");
         if (!reply) {
             reply = "Oh no! Qualcosa non ha funzionato!"
         }

@@ -1,7 +1,7 @@
 const axios = require("axios");
 const {Prompts, extractStringBetweenCharacters, getRandomElementsFromArray, removeCharExceptFirstAndLast} = require("./utils");
 const randomItem = require("random-item");
-async function prompt (richiesta, type= null) {
+async function prompt (richiesta, type= null, model= "gpt-3.5-turbo") {
     if (!richiesta.text) {
         richiesta.text = "rispondimi solo con una battuta divertente su dungeons and dragons senza che sembri la risposta di un bot e in meno di 50 parole"
     }
@@ -21,7 +21,7 @@ async function prompt (richiesta, type= null) {
     messages.push({"role": "user", "content": richiesta.text});
     const apiKey = process.env.CHATGPT_API_KEY
     const data = {
-        "model": "gpt-3.5-turbo-16k",
+        "model": model,
         "messages": messages,
         "temperature": richiesta.temperature || 1
     };
