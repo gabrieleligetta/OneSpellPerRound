@@ -14,6 +14,9 @@ function extractStringBetweenCharacters(inputString, char1, char2) {
 }
 
 function getRandomElementsFromArray(arr, number) {
+    if (number< 1) {
+        number = 2
+    }
     if (!Array.isArray(arr) || typeof number !== 'number' || number < 1) {
         throw new Error('Invalid input. The first argument should be an array, and the second argument should be a positive number.');
     }
