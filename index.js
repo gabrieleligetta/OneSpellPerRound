@@ -78,7 +78,7 @@ bot.command("beSilly", async (ctx) => {
   let reply = await chatgpt.prompt(
     { text: richiesta, temperature: 1.0 },
     Prompts.MartaLaPapera,
-    "gpt-4-32k"
+    "gpt-4"
   );
   await ctx.telegram.sendMessage(
     ctx.chat.id,
@@ -101,7 +101,7 @@ bot.command("enterDungeon", async (ctx) => {
   let reply = await chatgpt.prompt(
     { text: richiesta, temperature: 1.0 },
     Prompts.MartaLaPapera,
-    "gpt-4-32k"
+    "gpt-4"
   );
   await ctx.telegram.sendMessage(
     ctx.chat.id,
@@ -211,7 +211,7 @@ const raccontoDiMartaBroadcast = async () => {
         temperature: 1.0,
       },
       Prompts.MartaLaPapera,
-      "gpt-4-32k"
+      "gpt-4"
     );
     if (!reply) {
       reply = "Oh no! Qualcosa non ha funzionato!";
