@@ -4,7 +4,6 @@ const express = require("express");
 const path = require("path");
 const randomFile = require("select-random-file");
 require("dotenv").config();
-const token = process.env.BOT_TOKEN;
 const PORT = process.env.PORT || 5000;
 const quotes = require("./quotes");
 const persona = require("./persona");
@@ -13,9 +12,14 @@ const utils = require("./utils");
 let USERS_CACHE = [481189001, -1001845883499];
 require("./images");
 const chatgpt = require("./chatgpt");
-const { generateMartaPrompt, generateNewMartaPrompt } = require("./chatgpt");
+const {
+  generateMartaPrompt,
+  generateNewMartaPrompt,
+  generateIntroducktion,
+} = require("./chatgpt");
 const { generateEpisodeFormat } = require("./chatgpt");
 const { Prompts, chunk } = require("./utils");
+const { Markup } = require("telegraf");
 let MARTA_EPISODE_PROMPT = null;
 //Heroku deploy port
 express()
@@ -25,6 +29,7 @@ express()
   .get("/", (req, res) => res.render("pages/index"))
   .listen(PORT, () => console.log(`Listening on ${PORT}`));
 //Heroku deploy port
+const token = process.env.BOT_TOKEN;
 if (token === undefined) {
   throw new Error("BOT_TOKEN must be provided!");
 }
@@ -67,15 +72,8 @@ bot.command("randomspell", async (ctx) => {
 bot.command("beSilly", async (ctx) => {
   if (!MARTA_EPISODE_PROMPT) {
     MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-    console.log("MARTA_EPISODE_PROMPT");
-    console.log(MARTA_EPISODE_PROMPT);
   }
-  console.log("sono nel beSilly");
-  console.log("MARTA_EPISODE_PROMPT");
-  console.log(MARTA_EPISODE_PROMPT);
   const richiesta = generateNewMartaPrompt(MARTA_EPISODE_PROMPT);
-  console.log("richiesta");
-  console.log(richiesta);
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
   let reply = await chatgpt.prompt(
     { text: richiesta, temperature: 1.0 },
@@ -92,6 +90,42 @@ bot.command("beSilly", async (ctx) => {
 });
 bot.command("bSB", async (ctx) => {
   await raccontoDiMartaBroadcast();
+});
+
+bot.command("enterDungeon", async (ctx) => {
+  if (!MARTA_EPISODE_PROMPT) {
+    MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+  }
+  const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
+  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+  let reply = await chatgpt.prompt(
+    { text: richiesta, temperature: 1.0 },
+    Prompts.MartaLaPapera,
+    "gpt-3.5-turbo-16k"
+  );
+  await ctx.telegram.sendMessage(
+    ctx.chat.id,
+    "Le avventure di Marta, la papera col cappello da strega:"
+  );
+  for (const part of chunk(reply, 4096)) {
+    await ctx.telegram.sendMessage(ctx.chat.id, part);
+  }
+
+  await ctx.telegram.sendMessage("<b>Combatti</b> o <b>Scappa</b>", {
+    parse_mode: "HTML",
+    ...Markup.inlineKeyboard([
+      Markup.button.callback("Combatti", "Combatti"),
+      Markup.button.callback("Scappa", "Scappa"),
+    ]),
+  });
+});
+
+bot.action("Combatti", (ctx, next) => {
+  return ctx.reply("⚔️").then(() => next());
+});
+
+bot.action("Scappa", (ctx, next) => {
+  return ctx.reply("👟").then(() => next());
 });
 
 bot.command("PromptUpdate", async (ctx) => {
@@ -136,7 +170,7 @@ const randomSpellBroadcast = async () => {
     "rispondimi solo con una battuta divertente a tema fantasy senza che sembri la risposta di un bot";
   if (USERS_CACHE.length) {
     let battuta = await chatgpt.prompt(
-      { text: richiesta, temperature: 1.1 },
+      { text: richiesta, temperature: 0.7 },
       Prompts.BattuteDnD
     );
     if (!battuta) {
