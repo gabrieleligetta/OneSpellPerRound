@@ -58,6 +58,28 @@ async function prompt(richiesta, type = null, model = "gpt-3.5-turbo") {
   }
 }
 
+const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
+  let prompt =
+    "Rispondimi solo con una breve introduzione di questa avventura di Marta la papera con il cappello da strega, senza che sembri la risposta di un bot.";
+  if (!!MARTA_EPISODE_PROMPT) {
+    if (MARTA_EPISODE_PROMPT?.supportCharacters) {
+      prompt += ` gli amici di Marta saranno: ${MARTA_EPISODE_PROMPT.supportCharacters.join(
+        ", "
+      )}. `;
+    }
+    if (MARTA_EPISODE_PROMPT?.event) {
+      prompt += ` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causato da ${MARTA_EPISODE_PROMPT.boss}. `;
+    }
+    if (MARTA_EPISODE_PROMPT?.enemyPlace) {
+      prompt += ` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
+    }
+    if (MARTA_EPISODE_PROMPT?.trialOfHeroes) {
+      prompt += ` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes}. `;
+    }
+  }
+
+  return prompt;
+};
 const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
   let prompt =
     "rispondimi solo con un episodio delle avventure di Marta, la papera con il cappello da strega, senza che sembri la risposta di un bot.";
@@ -93,7 +115,7 @@ const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
       } saranno: ${MARTA_EPISODE_PROMPT.enemySpells.join(", ")}. `;
     }
     prompt +=
-      "il racconto sarà  e dettagliato," +
+      "il racconto sarà e dettagliato," +
       " descriverà gli scontri e i modo in cui verrà superata la sfida in maniera approfondita, ci saranno dialoghi e riflessioni di Marta";
   }
 
@@ -185,9 +207,6 @@ const generateEpisodeFormat = async () => {
   };
 };
 
-const getStringBetweenHashes = (input) =>
-  (input.match(/#(.*?)#/) || [])[1] || null;
-
 const generateArrayOf = async (narrationElement, lore) => {
   let stringBetweenHashes = null;
   let textArray = [];
@@ -251,9 +270,13 @@ const daVinciPrompt = async (richiesta, type = null) => {
   }
 };
 
+const getStringBetweenHashes = (input) =>
+  (input.match(/#(.*?)#/) || [])[1] || null;
+
 module.exports = {
   prompt,
   generateMartaPrompt,
   generateEpisodeFormat,
   generateNewMartaPrompt,
+  generateIntroducktion,
 };
