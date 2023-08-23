@@ -1,9 +1,11 @@
 const axios = require("axios");
+const martaMessages = new Map();
 const {
   Prompts,
   extractStringBetweenCharacters,
   getRandomElementsFromArray,
   removeCharExceptFirstAndLast,
+  abstractDice,
 } = require("./utils");
 const randomItem = require("random-item");
 
@@ -58,27 +60,120 @@ async function prompt(richiesta, type = null, model = "gpt-3.5-turbo") {
   }
 }
 
+async function promptForMarta(
+  request,
+  temperature = 1,
+  model = "gpt-3.5-turbo",
+  isFirstPassage,
+  chatId,
+  isIncipit = false
+) {
+  if (isFirstPassage === 1 && isIncipit) {
+    martaMessages.set(chatId, [
+      {
+        role: "system",
+        content:
+          "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un atmosfera a metà bambinesca e a metà Lovecraftiana.",
+      },
+    ]);
+  }
+  if (isFirstPassage !== 4 && !isIncipit) {
+    martaMessages.set(chatId, [
+      ...martaMessages.get(chatId),
+      {
+        role: "system",
+        content:
+          "è importante NON raccontare di come la prova viene superata, se il tiro del dado è più basso della difficoltà la prova NON viene superata in nessun modo, nemmeno con mezzi esterni",
+      },
+    ]);
+  }
+  martaMessages.set(chatId, [
+    ...martaMessages.get(chatId),
+    {
+      role: "user",
+      content: request,
+    },
+  ]);
+  const apiKey = process.env.CHATGPT_API_KEY;
+  const data = {
+    model: model,
+    messages: martaMessages.get(chatId),
+    temperature: temperature || 1,
+  };
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const botResponse = response.data.choices[0].message.content;
+    martaMessages.set(chatId, [
+      ...martaMessages.get(chatId),
+      {
+        role: "assistant",
+        content: botResponse,
+      },
+    ]);
+    console.log("martaMessages");
+    console.log(martaMessages);
+    return botResponse;
+  } catch (e) {
+    console.log(e.response.status);
+    console.log(e.response.statusText);
+    console.log(e.response.data.error);
+  }
+}
+
 const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
   let prompt =
-    "Rispondimi solo con una breve introduzione di questa avventura di Marta la papera con il cappello da strega, senza che sembri la risposta di un bot.";
+    "Rispondimi solo con l'inizio di un'avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole";
   if (!!MARTA_EPISODE_PROMPT) {
     if (MARTA_EPISODE_PROMPT?.supportCharacters) {
       prompt += ` gli amici di Marta saranno: ${MARTA_EPISODE_PROMPT.supportCharacters.join(
         ", "
       )}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.event) {
-      prompt += ` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causato da ${MARTA_EPISODE_PROMPT.boss}. `;
+    if (MARTA_EPISODE_PROMPT?.events) {
+      prompt += ` l'evento iniziale sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.events
+      )} causato da ${MARTA_EPISODE_PROMPT.boss}. `;
     }
     if (MARTA_EPISODE_PROMPT?.enemyPlace) {
       prompt += ` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.trialOfHeroes) {
-      prompt += ` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes}. `;
-    }
   }
 
   return prompt;
+};
+
+const generateTrial = (
+  MARTA_EPISODE_PROMPT,
+  trialStage,
+  difficulty,
+  modifier
+) => {
+  let prompt = `Rispondimi solo con ${trialStage} di questa avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole`;
+  if (!!MARTA_EPISODE_PROMPT && trialStage === "la prima prova") {
+    if (MARTA_EPISODE_PROMPT?.trialsOfHeroes) {
+      prompt += ` la sfida da superare sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.trialsOfHeroes
+      )}`;
+    }
+  }
+  prompt += ` la difficoltà della prova da superare sarà: ${
+    difficulty + modifier
+  }`;
+
+  return prompt;
+};
+
+const generateEpisodeFinale = (MARTA_EPISODE_PROMPT) => {
+  return `Rispondimi solo con il finale di questa avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole`;
 };
 const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
   let prompt =
@@ -95,14 +190,20 @@ const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
         ", "
       )}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.event) {
-      prompt += ` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causata dal potere di ${MARTA_EPISODE_PROMPT.boss} o dal tirapiedi ${MARTA_EPISODE_PROMPT.enemy}. `;
+    if (MARTA_EPISODE_PROMPT?.events) {
+      prompt += ` l'evento iniziale sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.events
+      )} causata dal potere di ${MARTA_EPISODE_PROMPT.boss} o dal tirapiedi ${
+        MARTA_EPISODE_PROMPT.enemy
+      }. `;
     }
     if (MARTA_EPISODE_PROMPT?.enemyPlace) {
       prompt += ` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.trialOfHeroes) {
-      prompt += ` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes} con descrizione di come viene superata. `;
+    if (MARTA_EPISODE_PROMPT?.trialsOfHeroes) {
+      prompt += ` la sfida da superare sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.trialsOfHeroes
+      )} con descrizione di come viene superata. `;
     }
     if (MARTA_EPISODE_PROMPT?.spells) {
       prompt += ` gli incantesimi utilizzati da marta e gli amici saranno: ${MARTA_EPISODE_PROMPT.spells.join(
@@ -131,14 +232,20 @@ const generateNewMartaPrompt = (MARTA_EPISODE_PROMPT) => {
         ", "
       )}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.event) {
-      prompt += ` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.event} causata dal potere di ${MARTA_EPISODE_PROMPT.boss} o dal tirapiedi ${MARTA_EPISODE_PROMPT.enemy}. `;
+    if (MARTA_EPISODE_PROMPT?.events) {
+      prompt += ` l'evento iniziale sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.events
+      )} causata dal potere di ${MARTA_EPISODE_PROMPT.boss} o dal tirapiedi ${
+        MARTA_EPISODE_PROMPT.enemy
+      }. `;
     }
     if (MARTA_EPISODE_PROMPT?.enemyPlace) {
       prompt += ` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
     }
-    if (MARTA_EPISODE_PROMPT?.trialOfHeroes) {
-      prompt += ` la sfida da superare sarà: ${MARTA_EPISODE_PROMPT.trialOfHeroes} con descrizione di come viene superata. `;
+    if (MARTA_EPISODE_PROMPT?.trialsOfHeroes) {
+      prompt += ` la sfida da superare sarà: ${randomItem(
+        MARTA_EPISODE_PROMPT.trialsOfHeroes
+      )} con descrizione di come viene superata. `;
     }
   }
 
@@ -164,11 +271,9 @@ const generateEpisodeFormat = async () => {
   const enemyPlace = randomItem(
     await generateArrayOf("Luoghi", `rifugio di ${enemy}, atmosfera cupa`)
   );
-  const event = randomItem(
-    await generateArrayOf(
-      "Eventi",
-      `causati da ${enemy} nel luogo ${startPlace}`
-    )
+  const events = await generateArrayOf(
+    "Eventi",
+    `causati da ${enemy} nel luogo ${startPlace}`
   );
   return {
     episodeFormat: randomItem(["autoconclusivo"]),
@@ -181,14 +286,12 @@ const generateEpisodeFormat = async () => {
       ),
       Math.floor(Math.random() * 4)
     ),
-    event: event,
+    events: events,
     startPlace: startPlace,
     enemyPlace: enemyPlace,
-    trialOfHeroes: randomItem(
-      await generateArrayOf(
-        "Sfide da eroi",
-        `causati da ${enemy} nel luogo ${enemyPlace}`
-      )
+    trialsOfHeroes: await generateArrayOf(
+      "Sfide da eroi",
+      `causati da ${enemy} nel luogo ${enemyPlace}`
     ),
     // spells: getRandomElementsFromArray(
     //   await generateArrayOf(
@@ -279,4 +382,7 @@ module.exports = {
   generateEpisodeFormat,
   generateNewMartaPrompt,
   generateIntroducktion,
+  generateTrial,
+  promptForMarta,
+  generateEpisodeFinale,
 };

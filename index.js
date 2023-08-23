@@ -16,11 +16,47 @@ const {
   generateMartaPrompt,
   generateNewMartaPrompt,
   generateIntroducktion,
+  generateTrial,
+  generateEpisodeFinale,
 } = require("./chatgpt");
 const { generateEpisodeFormat } = require("./chatgpt");
-const { Prompts, chunk } = require("./utils");
-const { Markup } = require("telegraf");
-let MARTA_EPISODE_PROMPT = null;
+const { Prompts, chunk, makeid, abstractDice } = require("./utils");
+const { Markup, session } = require("telegraf");
+const { tr } = require("faker/lib/locales");
+let MARTA_EPISODE_PROMPT = {
+  episodeFormat: "autoconclusivo",
+  enemy: " Dragonne",
+  boss: " Tiamat",
+  supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
+  events: [
+    "Incendio distrugge mercato nel Villaggio delle Streghe",
+    " Invasione di draghi nel Villaggio delle Streghe",
+    " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
+    " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
+    " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
+    " Panico generale causato da un dragone nel Villaggio delle Streghe",
+    " Attacco di dragone al castello nel Villaggio delle Streghe",
+    " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
+    " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
+    " ",
+  ],
+  startPlace: " Villaggio delle Streghe",
+  enemyPlace: " Aokigahara Forest",
+  trialsOfHeroes: [
+    "Caduta da altezza",
+    " combattimento con spade",
+    " furia distruttiva",
+    " abilità di volo",
+    " controllo del fuoco",
+    " teletrasporto",
+    " manipolazione mentale",
+    " invisibilità",
+    " guarigione istantanea",
+    " controllo elementale",
+  ],
+};
+let uniqueAction = makeid(8);
+const uniqueActionArray = [];
 //Heroku deploy port
 express()
   .use(express.static(path.join(__dirname, "public")))
@@ -34,6 +70,8 @@ if (token === undefined) {
   throw new Error("BOT_TOKEN must be provided!");
 }
 const bot = new telegraf(token);
+
+bot.use(session());
 
 bot.command("randomchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
@@ -88,55 +126,96 @@ bot.command("beSilly", async (ctx) => {
     await ctx.telegram.sendMessage(ctx.chat.id, part);
   }
 });
-bot.command("bSB", async (ctx) => {
-  await raccontoDiMartaBroadcast();
-});
 
 bot.command("enterDungeon", async (ctx) => {
   if (!MARTA_EPISODE_PROMPT) {
     MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+    console.log("MARTA_EPISODE_PROMPT");
+    console.log(MARTA_EPISODE_PROMPT);
   }
+  ctx.session.dungeonData = 1;
   const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let reply = await chatgpt.prompt(
-    { text: richiesta, temperature: 1.0 },
-    Prompts.MartaLaPapera,
-    "gpt-4"
-  );
-  await ctx.telegram.sendMessage(
+  let reply = await chatgpt.promptForMarta(
+    richiesta,
+    1,
+    "gpt-3.5-turbo",
+    ctx.session.dungeonData,
     ctx.chat.id,
-    "Le avventure di Marta, la papera col cappello da strega:"
+    true
   );
   for (const part of chunk(reply, 4096)) {
     await ctx.telegram.sendMessage(ctx.chat.id, part);
   }
-
-  await ctx.telegram.sendMessage("<b>Combatti</b> o <b>Scappa</b>", {
-    parse_mode: "HTML",
-    ...Markup.inlineKeyboard([
-      Markup.button.callback("Combatti", "Combatti"),
-      Markup.button.callback("Scappa", "Scappa"),
-    ]),
-  });
-});
-
-bot.action("Combatti", (ctx, next) => {
-  return ctx.reply("⚔️").then(() => next());
-});
-
-bot.action("Scappa", (ctx, next) => {
-  return ctx.reply("👟").then(() => next());
-});
-
-bot.command("PromptUpdate", async (ctx) => {
-  MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-  console.log("MARTA_EPISODE_PROMPT");
-  console.log(MARTA_EPISODE_PROMPT);
+  const difficulty = abstractDice(5, 15);
+  const firstTrial = generateTrial(
+    MARTA_EPISODE_PROMPT,
+    "la prima prova",
+    difficulty,
+    ctx.session.dungeonData
+  );
+  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+  reply = await chatgpt.promptForMarta(
+    firstTrial,
+    1,
+    "gpt-3.5-turbo",
+    ctx.session.dungeonData,
+    ctx.chat.id
+  );
+  for (const part of chunk(reply, 4096)) {
+    await ctx.telegram.sendMessage(ctx.chat.id, part);
+  }
+  await ctx.reply(
+    "La Difficolta della prova è : " +
+      (difficulty + ctx.session.dungeonData) +
+      " (" +
+      difficulty +
+      "+" +
+      ctx.session.dungeonData +
+      ")"
+  );
   await ctx.telegram.sendMessage(
     ctx.chat.id,
-    JSON.stringify(MARTA_EPISODE_PROMPT)
+    "Cosa Vuoi Fare?",
+    Markup.inlineKeyboard([
+      Markup.callbackButton("Tira Il Dado", "rollDice", false),
+      // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
+    ]).extra()
   );
 });
+
+bot.action("rollDice", async (ctx, next) => {
+  console.log("ctx.session.dungeonData");
+  console.log(ctx.session.dungeonData);
+  if (!uniqueActionArray.includes(uniqueAction)) {
+    uniqueActionArray.push(uniqueAction);
+    const diceRoll = abstractDice(1, 20);
+    await ctx.reply("Hai Rollato: " + diceRoll);
+    const prompt = generateDiceRollPrompt(diceRoll);
+    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+    const reply = await chatgpt.promptForMarta(
+      prompt,
+      1,
+      "gpt-3.5-turbo",
+      ctx.session.dungeonData,
+      ctx.chat.id
+    );
+    for (const part of chunk(reply, 4096)) {
+      await ctx.telegram.sendMessage(ctx.chat.id, part);
+    }
+    await sendFollowUpMessage(ctx);
+  } else {
+    return ctx.answerCbQuery("You already rolled the dice!");
+  }
+});
+
+// bot.action("ActionPrompt", (ctx, next) => {
+//   if (!uniqueActionArray.includes(uniqueAction)) {
+//     uniqueAction = makeid(8);
+//     uniqueActionArray.push(uniqueAction);
+//     return ctx.reply("👟").then(() => next());
+//   }
+// });
 
 bot.help(async (ctx) => {
   await ctx.reply(
@@ -227,6 +306,109 @@ const raccontoDiMartaBroadcast = async () => {
       }
     }
   }
+};
+
+const sendFollowUpMessage = async (ctx) => {
+  if (ctx.session.dungeonData === 1) {
+    ctx.session.dungeonData++;
+    uniqueAction = makeid(8);
+    const difficulty = abstractDice(5, 15);
+    const secondTrial = generateTrial(
+      MARTA_EPISODE_PROMPT,
+      "la seconda prova",
+      difficulty,
+      ctx.session.dungeonData
+    );
+    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+    const reply = await chatgpt.promptForMarta(
+      secondTrial,
+      1,
+      "gpt-3.5-turbo",
+      ctx.session.dungeonData,
+      ctx.chat.id
+    );
+    for (const part of chunk(reply, 4096)) {
+      await ctx.telegram.sendMessage(ctx.chat.id, part);
+    }
+    await ctx.reply(
+      "La Difficolta della prova è : " +
+        (difficulty + ctx.session.dungeonData) +
+        " (" +
+        difficulty +
+        "+" +
+        ctx.session.dungeonData +
+        ")"
+    );
+    await ctx.telegram.sendMessage(
+      ctx.chat.id,
+      "Cosa Vuoi Fare?",
+      Markup.inlineKeyboard([
+        Markup.callbackButton("Tira Il Dado", "rollDice", false),
+        // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
+      ]).extra()
+    );
+  } else if (ctx.session.dungeonData === 2) {
+    ctx.session.dungeonData++;
+    uniqueAction = makeid(8);
+    const difficulty = abstractDice(5, 15);
+    const thirdTrial = generateTrial(
+      MARTA_EPISODE_PROMPT,
+      "la terza e ultima prova",
+      difficulty,
+      ctx.session.dungeonData
+    );
+    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+    const reply = await chatgpt.promptForMarta(
+      thirdTrial,
+      1,
+      "gpt-3.5-turbo",
+      ctx.session.dungeonData,
+      ctx.chat.id
+    );
+    for (const part of chunk(reply, 4096)) {
+      await ctx.telegram.sendMessage(ctx.chat.id, part);
+    }
+    await ctx.reply(
+      "La Difficolta della prova è : " +
+        (difficulty + ctx.session.dungeonData) +
+        " (" +
+        difficulty +
+        "+" +
+        ctx.session.dungeonData +
+        ")"
+    );
+    await ctx.telegram.sendMessage(
+      ctx.chat.id,
+      "Cosa Vuoi Fare?",
+      Markup.inlineKeyboard([
+        Markup.callbackButton("Tira Il Dado", "rollDice", false),
+        // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
+      ]).extra()
+    );
+  } else if (ctx.session.dungeonData === 3) {
+    ctx.session.dungeonData++;
+    uniqueAction = makeid(8);
+    const finale = generateEpisodeFinale(MARTA_EPISODE_PROMPT);
+    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+    const reply = await chatgpt.promptForMarta(
+      finale,
+      1,
+      "gpt-3.5-turbo",
+      ctx.session.dungeonData,
+      ctx.chat.id
+    );
+    for (const part of chunk(reply, 4096)) {
+      await ctx.telegram.sendMessage(ctx.chat.id, part);
+    }
+  }
+};
+
+const generateDiceRollPrompt = (roll) => {
+  return (
+    "Raccontami nel dettaglio di come la prova è stata superata o fallita, impersonando il game Master, considerando che è stato tirato un d20 è il risultato è: " +
+    roll +
+    ", utilizza al massimo 150 parole"
+  );
 };
 
 //TODO spostare la funzione in un file apposito
