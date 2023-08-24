@@ -56,7 +56,7 @@ let MARTA_EPISODE_PROMPT = {
   ],
 };
 let uniqueAction = makeid(8);
-const uniqueActionArray = [];
+let uniqueActionArray = [];
 //Heroku deploy port
 express()
   .use(express.static(path.join(__dirname, "public")))
@@ -130,10 +130,8 @@ bot.command("beSilly", async (ctx) => {
 bot.command("enterDungeon", async (ctx) => {
   if (!MARTA_EPISODE_PROMPT) {
     MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-    console.log("MARTA_EPISODE_PROMPT");
-    console.log(MARTA_EPISODE_PROMPT);
   }
-  ctx.session.dungeonData = 1;
+  ctx.session.dungeonData = 0;
   const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
   let reply = await chatgpt.promptForMarta(
@@ -148,6 +146,9 @@ bot.command("enterDungeon", async (ctx) => {
     await ctx.telegram.sendMessage(ctx.chat.id, part);
   }
   const difficulty = abstractDice(5, 15);
+  uniqueAction = makeid(8);
+  uniqueActionArray.push(uniqueAction);
+  ctx.session.dungeonData = 1;
   const firstTrial = generateTrial(
     MARTA_EPISODE_PROMPT,
     "la prima prova",
@@ -187,8 +188,8 @@ bot.command("enterDungeon", async (ctx) => {
 bot.action("rollDice", async (ctx, next) => {
   console.log("ctx.session.dungeonData");
   console.log(ctx.session.dungeonData);
-  if (!uniqueActionArray.includes(uniqueAction)) {
-    uniqueActionArray.push(uniqueAction);
+  if (uniqueActionArray.includes(uniqueAction)) {
+    uniqueActionArray = uniqueActionArray.filter((e) => e !== uniqueAction);
     const diceRoll = abstractDice(1, 20);
     await ctx.reply("Hai Rollato: " + diceRoll);
     const prompt = generateDiceRollPrompt(diceRoll);
@@ -313,6 +314,8 @@ const sendFollowUpMessage = async (ctx) => {
     ctx.session.dungeonData++;
     uniqueAction = makeid(8);
     const difficulty = abstractDice(5, 15);
+    uniqueAction = makeid(8);
+    uniqueActionArray.push(uniqueAction);
     const secondTrial = generateTrial(
       MARTA_EPISODE_PROMPT,
       "la seconda prova",
@@ -351,6 +354,8 @@ const sendFollowUpMessage = async (ctx) => {
     ctx.session.dungeonData++;
     uniqueAction = makeid(8);
     const difficulty = abstractDice(5, 15);
+    uniqueAction = makeid(8);
+    uniqueActionArray.push(uniqueAction);
     const thirdTrial = generateTrial(
       MARTA_EPISODE_PROMPT,
       "la terza e ultima prova",
