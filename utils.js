@@ -42,6 +42,24 @@ function getRandomElementsFromArray(arr, number) {
   return selectedElements;
 }
 
+function getRandomAndRemove(arr) {
+  // Check if the array is empty
+  if (arr.length === 0) {
+    return undefined; // Return undefined if the array is empty
+  }
+
+  // Generate a random index within the array length
+  const randomIndex = Math.floor(Math.random() * arr.length);
+
+  // Get the randomly selected element
+  const randomElement = arr[randomIndex];
+
+  // Remove the selected element from the array
+  arr.splice(randomIndex, 1);
+
+  return randomElement;
+}
+
 const removeCharExceptFirstAndLast = (inputString, character) => {
   const firstIndex = inputString.indexOf(character);
   const lastIndex = inputString.lastIndexOf(character);
@@ -71,6 +89,7 @@ module.exports = {
   extractStringBetweenCharacters,
   chunk,
   getRandomElementsFromArray,
+  getRandomAndRemove,
   removeCharExceptFirstAndLast,
   getRandomName: function () {
     return faker.name.findName();
