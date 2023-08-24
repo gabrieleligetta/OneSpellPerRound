@@ -68,7 +68,7 @@ async function promptForMarta(
   chatId,
   isIncipit = false
 ) {
-  if (isFirstPassage === 1 && isIncipit) {
+  if (isFirstPassage === 0 && isIncipit) {
     martaMessages.set(chatId, [
       {
         role: "system",
@@ -119,8 +119,9 @@ async function promptForMarta(
         content: botResponse,
       },
     ]);
-    console.log("martaMessages");
-    console.log(martaMessages);
+    if (isFirstPassage === 4 && !isIncipit) {
+      martaMessages.set(chatId, []);
+    }
     return botResponse;
   } catch (e) {
     console.log(e.response.status);
