@@ -23,38 +23,39 @@ const { generateEpisodeFormat } = require("./chatgpt");
 const { Prompts, chunk, makeid, abstractDice } = require("./utils");
 const { Markup, session } = require("telegraf");
 const { tr } = require("faker/lib/locales");
-let MARTA_EPISODE_PROMPT = {
-  episodeFormat: "autoconclusivo",
-  enemy: " Dragonne",
-  boss: " Tiamat",
-  supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
-  events: [
-    "Incendio distrugge mercato nel Villaggio delle Streghe",
-    " Invasione di draghi nel Villaggio delle Streghe",
-    " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
-    " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
-    " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
-    " Panico generale causato da un dragone nel Villaggio delle Streghe",
-    " Attacco di dragone al castello nel Villaggio delle Streghe",
-    " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
-    " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
-    " ",
-  ],
-  startPlace: " Villaggio delle Streghe",
-  enemyPlace: " Aokigahara Forest",
-  trialsOfHeroes: [
-    "Caduta da altezza",
-    " combattimento con spade",
-    " furia distruttiva",
-    " abilità di volo",
-    " controllo del fuoco",
-    " teletrasporto",
-    " manipolazione mentale",
-    " invisibilità",
-    " guarigione istantanea",
-    " controllo elementale",
-  ],
-};
+let MARTA_EPISODE_PROMPT = null;
+// let MARTA_EPISODE_PROMPT = {
+//   episodeFormat: "autoconclusivo",
+//   enemy: " Dragonne",
+//   boss: " Tiamat",
+//   supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
+//   events: [
+//     "Incendio distrugge mercato nel Villaggio delle Streghe",
+//     " Invasione di draghi nel Villaggio delle Streghe",
+//     " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
+//     " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
+//     " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
+//     " Panico generale causato da un dragone nel Villaggio delle Streghe",
+//     " Attacco di dragone al castello nel Villaggio delle Streghe",
+//     " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
+//     " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
+//     " ",
+//   ],
+//   startPlace: " Villaggio delle Streghe",
+//   enemyPlace: " Aokigahara Forest",
+//   trialsOfHeroes: [
+//     "Caduta da altezza",
+//     " combattimento con spade",
+//     " furia distruttiva",
+//     " abilità di volo",
+//     " controllo del fuoco",
+//     " teletrasporto",
+//     " manipolazione mentale",
+//     " invisibilità",
+//     " guarigione istantanea",
+//     " controllo elementale",
+//   ],
+// };
 let uniqueAction = makeid(8);
 let uniqueActionArray = [];
 //Heroku deploy port
@@ -149,6 +150,7 @@ bot.command("enterDungeon", async (ctx) => {
   uniqueAction = makeid(8);
   uniqueActionArray.push(uniqueAction);
   ctx.session.dungeonData = 1;
+  ctx.session.trialDifficulty = difficulty + ctx.session.dungeonData;
   const firstTrial = generateTrial(
     MARTA_EPISODE_PROMPT,
     "la prima prova",
@@ -192,7 +194,10 @@ bot.action("rollDice", async (ctx, next) => {
     uniqueActionArray = uniqueActionArray.filter((e) => e !== uniqueAction);
     const diceRoll = abstractDice(1, 20);
     await ctx.reply("Hai Rollato: " + diceRoll);
-    const prompt = generateDiceRollPrompt(diceRoll);
+    const prompt = generateDiceRollPrompt(
+      diceRoll,
+      ctx.session.trialDifficulty
+    );
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
     const reply = await chatgpt.promptForMarta(
       prompt,
@@ -227,22 +232,6 @@ bot.help(async (ctx) => {
       " -/randomrolledchar\n" +
       " -/randombestchar"
   );
-});
-
-cron.schedule("0 10 * * *", async () => {
-  await randomSpellBroadcast();
-});
-
-cron.schedule("0 16 * * *", async () => {
-  console.log("sono nel chron di Marta");
-  await raccontoDiMartaBroadcast();
-});
-
-cron.schedule("0 1 * * *", async () => {
-  console.log("sono nel chron di MARTA_EPISODE_PROMPT");
-  MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-  console.log("MARTA_EPISODE_PROMPT");
-  console.log(MARTA_EPISODE_PROMPT);
 });
 
 const randomSpellBroadcast = async () => {
@@ -313,7 +302,8 @@ const sendFollowUpMessage = async (ctx) => {
   if (ctx.session.dungeonData === 1) {
     ctx.session.dungeonData++;
     uniqueAction = makeid(8);
-    const difficulty = abstractDice(5, 15);
+    const difficulty = abstractDice(7, 15);
+    ctx.session.trialDifficulty = difficulty + ctx.session.dungeonData;
     uniqueAction = makeid(8);
     uniqueActionArray.push(uniqueAction);
     const secondTrial = generateTrial(
@@ -353,7 +343,8 @@ const sendFollowUpMessage = async (ctx) => {
   } else if (ctx.session.dungeonData === 2) {
     ctx.session.dungeonData++;
     uniqueAction = makeid(8);
-    const difficulty = abstractDice(5, 15);
+    const difficulty = abstractDice(10, 15);
+    ctx.session.trialDifficulty = difficulty + ctx.session.dungeonData;
     uniqueAction = makeid(8);
     uniqueActionArray.push(uniqueAction);
     const thirdTrial = generateTrial(
@@ -408,102 +399,156 @@ const sendFollowUpMessage = async (ctx) => {
   }
 };
 
-const generateDiceRollPrompt = (roll) => {
+const generateDiceRollPrompt = (roll, difficulty) => {
+  const pezzoFrase = getAggettivo(roll, difficulty);
   return (
-    "Raccontami nel dettaglio di come la prova è stata superata o fallita, impersonando il game Master, considerando che è stato tirato un d20 è il risultato è: " +
-    roll +
-    ", utilizza al massimo 150 parole"
+    "Raccontami nel dettaglio di come" +
+    pezzoFrase +
+    ", impersonando il game Master, utilizza al massimo 150 parole"
   );
 };
 
-//TODO spostare la funzione in un file apposito
-bot.on("text", async (ctx) => {
-  USERS_CACHE.push(ctx.chat.id);
-  USERS_CACHE = [...new Set(USERS_CACHE)];
-  console.log("aggiungo " + ctx.chat.id + " alla cache!");
-  console.log("chache:  " + USERS_CACHE);
-  let msg = ctx.message.text;
-  let msgArray = msg.split(" ");
-  let tomoArray = ["diario", "tomo", "quaderno", "libro"];
-  let araldoArray = ["nyarla", "nyarlathotep", "nyarlatothep", "araldo"];
-  let fatherArray = ["adam", "adamo", "padre"];
-  let piagaArray = ["piaga", "reame", "remoto"];
-  let tomoCounter = 0;
-  let araldoCounter = 0;
-  let fatherCounter = 0;
-  let piagaCounter = 0;
-  for (let word of msgArray) {
-    for (let trigger of tomoArray) {
-      if (word.toLowerCase() === trigger.toLowerCase() && tomoCounter < 1) {
-        tomoCounter++;
-        if (utils.abstractDice(1, 10) <= 7) {
-          let dir = "./tomo_imgs/";
-          randomFile(dir, (err, file) => {
-            let messagePromise = ctx.replyWithPhoto({ source: dir + file });
-          });
-        } else {
-          let messagePromise = ctx.reply(quotes.getBookQuote());
-          console.log(messagePromise);
-        }
-      }
-    }
-    for (let trigger of araldoArray) {
-      if (word.toLowerCase() === trigger.toLowerCase() && araldoCounter < 1) {
-        araldoCounter++;
-        if (utils.abstractDice(1, 10) <= 6) {
-          let dir = "./nyarla/";
-          randomFile(dir, (err, file) => {
-            let messagePromise = ctx.replyWithPhoto({ source: dir + file });
-          });
-        } else {
-          let messagePromise = ctx.reply(
-            "<i>" + quotes.getRandomQuote() + "</i>",
-            { parse_mode: "HTML" }
-          );
-          console.log(messagePromise);
-        }
-      }
-    }
-    for (let trigger of piagaArray) {
-      if (word.toLowerCase() === trigger.toLowerCase() && piagaCounter < 1) {
-        piagaCounter++;
-        if (utils.abstractDice(1, 10) <= 6) {
-          let dir = "./piaga/";
-          randomFile(dir, (err, file) => {
-            let messagePromise = ctx.replyWithPhoto({ source: dir + file });
-          });
-        } else {
-          if (word.toLowerCase() === trigger.toLowerCase()) {
-            let messagePromise = ctx.reply(
-              "<i>" + quotes.getRandomQuote() + "</i>",
-              { parse_mode: "HTML" }
-            );
-            console.log(messagePromise);
-          }
-        }
-      }
-    }
-    for (let trigger of fatherArray) {
-      if (word.toLowerCase() === trigger.toLowerCase() && fatherCounter < 1) {
-        fatherCounter++;
-        if (utils.abstractDice(1, 10) <= 8) {
-          let dir = "./padre/galassie/";
-          randomFile(dir, (err, file) => {
-            ctx.replyWithPhoto(
-              { source: dir + file },
-              {
-                caption:
-                  "<b> ̴͉̰̯̎͑͋ ̶̹̇̑ ̵̜̞̭̏ ̸̣̺́̇ ̷͈͕̪͉̀͠ ̶̦͖́͌ ̷̝͕͚̍ ̵̱̼͗̎̃̒ ̸̭̍̍̚ ̵̨͈̠̓̊͆ ̵̜̥̔̔ ̷͚͠ ̴̛̙̥́̔́ ̸̠̌̒̐͛ ̶̮̼͋̾͝ ̷̧͚̭̖̅̒F̴̠͈̻̈͜ā̶̞͙͈͛́t̶͉̀̔h̴̨̩̲̙͂̍͐e̸̡͈̥̯̒͑r̴͕͈̗͠ͅ ̶̹̬͍̟̅́̈́͝ǐ̸͇̹̝ṣ̴̤̥̄ ̸̲̱̫͝w̶̛̘̠̭̥͌a̷̺͚͚̮͌͛͒̒t̶̠̤̓c̸̮͔̐͠h̵̜͌̑͝i̶̞͓̿̔n̴̬̤̦̾̿͜͝g̴̨̰̃̄ ̷̠͔̩̫̀̓ ̶̖͔̖̺͠ ̴̤͘ͅ ̵̬̳̞̖̓̀̀̿ ̶̞̲̋̈́̈́ ̴̬̙̞̝̿ ̴̨̛̤͓ ̶͎͎̰͎̆ ̶͈͠ ̸̭̘̬̎́ ̷̤̗̯͈͊͐ ̵̞̖̍͝ ̸̜͚̱̺̇ ̷̢͎̼̥̀̚ ̶̡̖̜̀͌͝ ̵̻͖̪̘̒͌̊͝ ̴̧͈̎ ̸̬̓ ̵̧̝̫̉͐̄͠ ̶̧̠͔͉̈́͆̚</b>",
-                parse_mode: "HTML",
-              }
-            );
-          });
-        } else {
-          await ctx.reply(quotes.getFatherQuote());
-        }
-      }
-    }
+const getAggettivo = (roll, difficulty) => {
+  const degree = getDegree(roll, difficulty);
+  if (roll === 20) {
+    return "la prova è stata brillantemente superata, un successo critico sotto ogni aspetto con ritrovamento di loot, grazie alla abilità eccelse di chi ha effettuato la prova";
+  } else if (roll === 1) {
+    return "la prova è stata un fallimento totale critico, con feriti, danni all'ambiente e equipaggiamento danneggiato, a causa delle scarse abilità di chi ha effettuato la prova";
+  } else if (degree === "barely_positive") {
+    return "la prova è stata superata di un soffio,con molta fatica grazie a un evento inaspettato o un colpo di fortuna";
+  } else if (degree === "positive") {
+    return "la prova è stata superata, con una buona dose di impegno grazie alle abilità di chi ha effettuato la prova";
+  } else if (degree === "extremely_positive") {
+    return "la prova è stata superata senza fatica, grazie alla abilità eccelse di chi ha effettuato la prova";
+  } else if (degree === "barely_negative") {
+    return "la prova è fallita di un soffio, a causa di un evento inaspettato o della sfortuna";
+  } else if (degree === "negative") {
+    return "la prova è fallita, nonostante l'impegno le abilità di chi ha effettuato la prova non sono bastate";
+  } else if (degree === "extremely_negative") {
+    return "la prova è stata un fallimento, con danni all'ambiente e equipaggiamento danneggiato";
   }
+};
+
+const getDegree = (roll, difficulty) => {
+  const degree = roll - difficulty;
+  if (degree >= 0 && degree < 5) {
+    return "barely_positive";
+  } else if (degree >= 5 && degree < 10) {
+    return "positive";
+  } else if (degree >= 10) {
+    return "extremely_positive";
+  } else if (degree < 0 && degree < -5) {
+    return "barely_negative";
+  } else if (degree <= -5 && degree < -10) {
+    return "negative";
+  } else if (degree <= -10) {
+    return "extremely_negative";
+  }
+};
+
+cron.schedule("0 10 * * *", async () => {
+  await randomSpellBroadcast();
 });
+
+cron.schedule("0 16 * * *", async () => {
+  console.log("sono nel chron di Marta");
+  await raccontoDiMartaBroadcast();
+});
+
+cron.schedule("0 1 * * *", async () => {
+  console.log("sono nel chron di MARTA_EPISODE_PROMPT");
+  MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+  console.log("MARTA_EPISODE_PROMPT");
+  console.log(MARTA_EPISODE_PROMPT);
+});
+
+// bot.on("text", async (ctx) => {
+//   USERS_CACHE.push(ctx.chat.id);
+//   USERS_CACHE = [...new Set(USERS_CACHE)];
+//   console.log("aggiungo " + ctx.chat.id + " alla cache!");
+//   console.log("chache:  " + USERS_CACHE);
+//   let msg = ctx.message.text;
+//   let msgArray = msg.split(" ");
+//   let tomoArray = ["diario", "tomo", "quaderno", "libro"];
+//   let araldoArray = ["nyarla", "nyarlathotep", "nyarlatothep", "araldo"];
+//   let fatherArray = ["adam", "adamo", "padre"];
+//   let piagaArray = ["piaga", "reame", "remoto"];
+//   let tomoCounter = 0;
+//   let araldoCounter = 0;
+//   let fatherCounter = 0;
+//   let piagaCounter = 0;
+//   for (let word of msgArray) {
+//     for (let trigger of tomoArray) {
+//       if (word.toLowerCase() === trigger.toLowerCase() && tomoCounter < 1) {
+//         tomoCounter++;
+//         if (utils.abstractDice(1, 10) <= 7) {
+//           let dir = "./tomo_imgs/";
+//           randomFile(dir, (err, file) => {
+//             let messagePromise = ctx.replyWithPhoto({ source: dir + file });
+//           });
+//         } else {
+//           let messagePromise = ctx.reply(quotes.getBookQuote());
+//           console.log(messagePromise);
+//         }
+//       }
+//     }
+//     for (let trigger of araldoArray) {
+//       if (word.toLowerCase() === trigger.toLowerCase() && araldoCounter < 1) {
+//         araldoCounter++;
+//         if (utils.abstractDice(1, 10) <= 6) {
+//           let dir = "./nyarla/";
+//           randomFile(dir, (err, file) => {
+//             let messagePromise = ctx.replyWithPhoto({ source: dir + file });
+//           });
+//         } else {
+//           let messagePromise = ctx.reply(
+//             "<i>" + quotes.getRandomQuote() + "</i>",
+//             { parse_mode: "HTML" }
+//           );
+//           console.log(messagePromise);
+//         }
+//       }
+//     }
+//     for (let trigger of piagaArray) {
+//       if (word.toLowerCase() === trigger.toLowerCase() && piagaCounter < 1) {
+//         piagaCounter++;
+//         if (utils.abstractDice(1, 10) <= 6) {
+//           let dir = "./piaga/";
+//           randomFile(dir, (err, file) => {
+//             let messagePromise = ctx.replyWithPhoto({ source: dir + file });
+//           });
+//         } else {
+//           if (word.toLowerCase() === trigger.toLowerCase()) {
+//             let messagePromise = ctx.reply(
+//               "<i>" + quotes.getRandomQuote() + "</i>",
+//               { parse_mode: "HTML" }
+//             );
+//             console.log(messagePromise);
+//           }
+//         }
+//       }
+//     }
+//     for (let trigger of fatherArray) {
+//       if (word.toLowerCase() === trigger.toLowerCase() && fatherCounter < 1) {
+//         fatherCounter++;
+//         if (utils.abstractDice(1, 10) <= 8) {
+//           let dir = "./padre/galassie/";
+//           randomFile(dir, (err, file) => {
+//             ctx.replyWithPhoto(
+//               { source: dir + file },
+//               {
+//                 caption:
+//                   "<b> ̴͉̰̯̎͑͋ ̶̹̇̑ ̵̜̞̭̏ ̸̣̺́̇ ̷͈͕̪͉̀͠ ̶̦͖́͌ ̷̝͕͚̍ ̵̱̼͗̎̃̒ ̸̭̍̍̚ ̵̨͈̠̓̊͆ ̵̜̥̔̔ ̷͚͠ ̴̛̙̥́̔́ ̸̠̌̒̐͛ ̶̮̼͋̾͝ ̷̧͚̭̖̅̒F̴̠͈̻̈͜ā̶̞͙͈͛́t̶͉̀̔h̴̨̩̲̙͂̍͐e̸̡͈̥̯̒͑r̴͕͈̗͠ͅ ̶̹̬͍̟̅́̈́͝ǐ̸͇̹̝ṣ̴̤̥̄ ̸̲̱̫͝w̶̛̘̠̭̥͌a̷̺͚͚̮͌͛͒̒t̶̠̤̓c̸̮͔̐͠h̵̜͌̑͝i̶̞͓̿̔n̴̬̤̦̾̿͜͝g̴̨̰̃̄ ̷̠͔̩̫̀̓ ̶̖͔̖̺͠ ̴̤͘ͅ ̵̬̳̞̖̓̀̀̿ ̶̞̲̋̈́̈́ ̴̬̙̞̝̿ ̴̨̛̤͓ ̶͎͎̰͎̆ ̶͈͠ ̸̭̘̬̎́ ̷̤̗̯͈͊͐ ̵̞̖̍͝ ̸̜͚̱̺̇ ̷̢͎̼̥̀̚ ̶̡̖̜̀͌͝ ̵̻͖̪̘̒͌̊͝ ̴̧͈̎ ̸̬̓ ̵̧̝̫̉͐̄͠ ̶̧̠͔͉̈́͆̚</b>",
+//                 parse_mode: "HTML",
+//               }
+//             );
+//           });
+//         } else {
+//           await ctx.reply(quotes.getFatherQuote());
+//         }
+//       }
+//     }
+//   }
+// });
 
 bot.launch();

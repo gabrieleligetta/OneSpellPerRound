@@ -6,6 +6,7 @@ const {
   getRandomElementsFromArray,
   removeCharExceptFirstAndLast,
   abstractDice,
+  getRandomAndRemove,
 } = require("./utils");
 const randomItem = require("random-item");
 
@@ -73,7 +74,7 @@ async function promptForMarta(
       {
         role: "system",
         content:
-          "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un atmosfera a metà bambinesca e a metà Lovecraftiana.",
+          "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un'atmosfera fantasy.",
       },
     ]);
   }
@@ -83,7 +84,7 @@ async function promptForMarta(
       {
         role: "system",
         content:
-          "è importante NON raccontare di come la prova viene superata, se il tiro del dado è più basso della difficoltà la prova NON viene superata in nessun modo, nemmeno con mezzi esterni",
+          "è importante NON raccontare di come la prova viene superata, ma solo una descrizione della prova da superare",
       },
     ]);
   }
@@ -140,12 +141,10 @@ const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
       )}. `;
     }
     if (MARTA_EPISODE_PROMPT?.events) {
-      prompt += ` l'evento iniziale sarà: ${randomItem(
-        MARTA_EPISODE_PROMPT.events
-      )} causato da ${MARTA_EPISODE_PROMPT.boss}. `;
+      prompt += ` l'evento iniziale sarà: ${MARTA_EPISODE_PROMPT.initialEvent} causato da ${MARTA_EPISODE_PROMPT.enemy} servitore di ${MARTA_EPISODE_PROMPT.boss}. `;
     }
     if (MARTA_EPISODE_PROMPT?.enemyPlace) {
-      prompt += ` il luogo del combattimento col nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
+      prompt += ` il luogo in cui si trova il nemico sarà: ${MARTA_EPISODE_PROMPT.enemyPlace}. `;
     }
   }
 
@@ -158,12 +157,17 @@ const generateTrial = (
   difficulty,
   modifier
 ) => {
-  let prompt = `Rispondimi solo con ${trialStage} di questa avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole`;
+  let prompt = `Rispondimi solo con ${trialStage} di questa avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole e non descrivere di come la prova viene superata`;
   if (!!MARTA_EPISODE_PROMPT && trialStage === "la prima prova") {
     if (MARTA_EPISODE_PROMPT?.trialsOfHeroes) {
       prompt += ` la sfida da superare sarà: ${randomItem(
         MARTA_EPISODE_PROMPT.trialsOfHeroes
       )}`;
+    }
+  }
+  if (!!MARTA_EPISODE_PROMPT && trialStage === "la terza e ultima prova") {
+    if (MARTA_EPISODE_PROMPT?.events) {
+      prompt += ` risolvere l'evento iniziale: ${MARTA_EPISODE_PROMPT.initialEvent} causato da ${MARTA_EPISODE_PROMPT.boss} per sconfiggere ${MARTA_EPISODE_PROMPT.enemy}. nel luogo ${MARTA_EPISODE_PROMPT.enemyPlace}`;
     }
   }
   prompt += ` la difficoltà della prova da superare sarà: ${
@@ -276,6 +280,7 @@ const generateEpisodeFormat = async () => {
     "Eventi",
     `causati da ${enemy} nel luogo ${startPlace}`
   );
+  const initialEvent = getRandomAndRemove(events);
   return {
     episodeFormat: randomItem(["autoconclusivo"]),
     enemy: enemy,
@@ -288,6 +293,7 @@ const generateEpisodeFormat = async () => {
       Math.floor(Math.random() * 4)
     ),
     events: events,
+    initialEvent: initialEvent,
     startPlace: startPlace,
     enemyPlace: enemyPlace,
     trialsOfHeroes: await generateArrayOf(
