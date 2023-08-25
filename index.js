@@ -130,7 +130,14 @@ bot.command("enterDungeon", async (ctx) => {
   await bot.telegram.sendPhoto(ctx.chat.id, {
     source: "./imgs/witch2.jpeg",
   });
-  await avventuraInterattivaMartaLaPapera(ctx);
+  uniqueActionArray.push(ctx.chat.id);
+  await bot.telegram.sendMessage(
+    ctx.chat.id,
+    "Avviare una nuova avventura di Marta la papera col cappello da strega?",
+    Markup.inlineKeyboard([
+      Markup.callbackButton("Tira Il Dado!", "startMartaAdventure", false),
+    ]).extra()
+  );
 });
 
 bot.action("startMartaAdventure", async (ctx, next) => {
