@@ -126,6 +126,10 @@ bot.command("beSilly", async (ctx) => {
 });
 
 bot.command("enterDungeon", async (ctx) => {
+  await bot.telegram.sendChatAction(ctx.chat.id, "typing");
+  await bot.telegram.sendPhoto(ctx.chat.id, {
+    source: "./imgs/witch2.jpeg",
+  });
   await avventuraInterattivaMartaLaPapera(ctx);
 });
 
