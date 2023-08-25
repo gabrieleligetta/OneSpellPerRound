@@ -21,39 +21,39 @@ const { generateEpisodeFormat } = require("./chatgpt");
 const { Prompts, chunk, makeid, abstractDice } = require("./utils");
 const { Markup, session } = require("telegraf");
 const { tr } = require("faker/lib/locales");
-let MARTA_EPISODE_PROMPT = null;
-// let MARTA_EPISODE_PROMPT = {
-//   episodeFormat: "autoconclusivo",
-//   enemy: " Dragonne",
-//   boss: " Tiamat",
-//   supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
-//   events: [
-//     "Incendio distrugge mercato nel Villaggio delle Streghe",
-//     " Invasione di draghi nel Villaggio delle Streghe",
-//     " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
-//     " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
-//     " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
-//     " Panico generale causato da un dragone nel Villaggio delle Streghe",
-//     " Attacco di dragone al castello nel Villaggio delle Streghe",
-//     " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
-//     " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
-//     " ",
-//   ],
-//   startPlace: " Villaggio delle Streghe",
-//   enemyPlace: " Aokigahara Forest",
-//   trialsOfHeroes: [
-//     "Caduta da altezza",
-//     " combattimento con spade",
-//     " furia distruttiva",
-//     " abilità di volo",
-//     " controllo del fuoco",
-//     " teletrasporto",
-//     " manipolazione mentale",
-//     " invisibilità",
-//     " guarigione istantanea",
-//     " controllo elementale",
-//   ],
-// };
+// let MARTA_EPISODE_PROMPT = null;
+let MARTA_EPISODE_PROMPT = {
+  episodeFormat: "autoconclusivo",
+  enemy: " Dragonne",
+  boss: " Tiamat",
+  supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
+  events: [
+    "Incendio distrugge mercato nel Villaggio delle Streghe",
+    " Invasione di draghi nel Villaggio delle Streghe",
+    " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
+    " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
+    " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
+    " Panico generale causato da un dragone nel Villaggio delle Streghe",
+    " Attacco di dragone al castello nel Villaggio delle Streghe",
+    " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
+    " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
+    " ",
+  ],
+  startPlace: " Villaggio delle Streghe",
+  enemyPlace: " Aokigahara Forest",
+  trialsOfHeroes: [
+    "Caduta da altezza",
+    " combattimento con spade",
+    " furia distruttiva",
+    " abilità di volo",
+    " controllo del fuoco",
+    " teletrasporto",
+    " manipolazione mentale",
+    " invisibilità",
+    " guarigione istantanea",
+    " controllo elementale",
+  ],
+};
 let uniqueActionArray = [];
 //Heroku deploy port
 express()
