@@ -21,48 +21,40 @@ const { generateEpisodeFormat } = require("./chatgpt");
 const { Prompts, chunk, makeid, abstractDice } = require("./utils");
 const { Markup, session } = require("telegraf");
 const { tr } = require("faker/lib/locales");
-// let MARTA_EPISODE_PROMPT = null;
-let MARTA_EPISODE_PROMPT = {
-  episodeFormat: "autoconclusivo",
-  enemy: " Dragonne",
-  boss: " Tiamat",
-  supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
-  events: [
-    "Incendio distrugge mercato nel Villaggio delle Streghe",
-    " Invasione di draghi nel Villaggio delle Streghe",
-    " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
-    " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
-    " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
-    " Panico generale causato da un dragone nel Villaggio delle Streghe",
-    " Attacco di dragone al castello nel Villaggio delle Streghe",
-    " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
-    " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
-    " ",
-  ],
-  startPlace: " Villaggio delle Streghe",
-  enemyPlace: " Aokigahara Forest",
-  trialsOfHeroes: [
-    "Caduta da altezza",
-    " combattimento con spade",
-    " furia distruttiva",
-    " abilità di volo",
-    " controllo del fuoco",
-    " teletrasporto",
-    " manipolazione mentale",
-    " invisibilità",
-    " guarigione istantanea",
-    " controllo elementale",
-  ],
-};
+let MARTA_EPISODE_PROMPT = null;
+// let MARTA_EPISODE_PROMPT = {
+//   episodeFormat: "autoconclusivo",
+//   enemy: " Dragonne",
+//   boss: " Tiamat",
+//   supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
+//   events: [
+//     "Incendio distrugge mercato nel Villaggio delle Streghe",
+//     " Invasione di draghi nel Villaggio delle Streghe",
+//     " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
+//     " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
+//     " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
+//     " Panico generale causato da un dragone nel Villaggio delle Streghe",
+//     " Attacco di dragone al castello nel Villaggio delle Streghe",
+//     " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
+//     " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
+//     " ",
+//   ],
+//   startPlace: " Villaggio delle Streghe",
+//   enemyPlace: " Aokigahara Forest",
+//   trialsOfHeroes: [
+//     "Caduta da altezza",
+//     " combattimento con spade",
+//     " furia distruttiva",
+//     " abilità di volo",
+//     " controllo del fuoco",
+//     " teletrasporto",
+//     " manipolazione mentale",
+//     " invisibilità",
+//     " guarigione istantanea",
+//     " controllo elementale",
+//   ],
+// };
 let uniqueActionArray = [];
-//Heroku deploy port
-express()
-  .use(express.static(path.join(__dirname, "public")))
-  .set("views", path.join(__dirname, "views"))
-  .set("view engine", "ejs")
-  .get("/", (req, res) => res.render("pages/index"))
-  .listen(PORT, () => console.log(`Listening on ${PORT}`));
-//Heroku deploy port
 const token = process.env.BOT_TOKEN;
 if (token === undefined) {
   throw new Error("BOT_TOKEN must be provided!");
@@ -161,7 +153,8 @@ bot.action("rollDice", async (ctx, next) => {
     await ctx.reply("Hai Rollato: " + diceRoll);
     const prompt = generateDiceRollPrompt(
       diceRoll,
-      ctx.session[ctx.chat.id].trialDifficulty
+      ctx.session[ctx.chat.id].trialDifficulty,
+      ctx
     );
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
     const reply = await chatgpt.promptForMarta(
@@ -396,7 +389,14 @@ const sendFollowUpMessage = async (ctx) => {
   } else if (ctx.session[ctx.chat.id].dungeonData === 3) {
     ctx.session[ctx.chat.id].dungeonData++;
     ctx.session[ctx.chat.id].uniqueAction = makeid(8);
-    const finale = generateEpisodeFinale(MARTA_EPISODE_PROMPT);
+
+    const finale = generateEpisodeFinale(
+      MARTA_EPISODE_PROMPT,
+      ctx.session[ctx.chat.id].overallSuccess
+    );
+    ctx.session[ctx.chat.id].overallSuccess = 0;
+    console.log("ctx.session[ctx.chat.id].overallSuccess");
+    console.log(ctx.session[ctx.chat.id].overallSuccess);
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
     const reply = await chatgpt.promptForMarta(
       finale,
@@ -411,8 +411,28 @@ const sendFollowUpMessage = async (ctx) => {
   }
 };
 
-const generateDiceRollPrompt = (roll, difficulty) => {
-  const pezzoFrase = getAggettivo(roll, difficulty);
+const generateDiceRollPrompt = (roll, difficulty, ctx) => {
+  if (!ctx.session[ctx.chat.id]?.overallSuccess) {
+    ctx.session[ctx.chat.id]["overallSuccess"] = 0;
+  }
+  const degree = roll - difficulty;
+  if (degree >= 0) {
+    console.log("ctx.session[ctx.chat.id].dungeonData");
+    console.log(ctx.session[ctx.chat.id].dungeonData);
+    if (ctx.session[ctx.chat.id].dungeonData === 1) {
+      ctx.session[ctx.chat.id].overallSuccess++;
+    } else if (ctx.session[ctx.chat.id].dungeonData === 2) {
+      ctx.session[ctx.chat.id].overallSuccess =
+        ctx.session[ctx.chat.id].overallSuccess + 2;
+    } else if (ctx.session[ctx.chat.id].dungeonData === 3) {
+      ctx.session[ctx.chat.id].overallSuccess =
+        ctx.session[ctx.chat.id].overallSuccess + 4;
+    }
+
+    console.log("ctx.session[ctx.chat.id].overallSuccess");
+    console.log(ctx.session[ctx.chat.id].overallSuccess);
+  }
+  const pezzoFrase = getAggettivo(roll, difficulty, ctx);
   return (
     "Raccontami nel dettaglio di come" +
     pezzoFrase +
@@ -420,8 +440,8 @@ const generateDiceRollPrompt = (roll, difficulty) => {
   );
 };
 
-const getAggettivo = (roll, difficulty) => {
-  const degree = getDegree(roll, difficulty);
+const getAggettivo = (roll, difficulty, ctx) => {
+  const degree = getDegree(roll, difficulty, ctx);
   if (roll === 20) {
     return "la prova è stata brillantemente superata, un successo critico sotto ogni aspetto con ritrovamento di loot, grazie alla abilità eccelse di chi ha effettuato la prova";
   } else if (roll === 1) {
@@ -441,7 +461,7 @@ const getAggettivo = (roll, difficulty) => {
   }
 };
 
-const getDegree = (roll, difficulty) => {
+const getDegree = (roll, difficulty, ctx) => {
   const degree = roll - difficulty;
   if (degree >= 0 && degree < 5) {
     return "barely_positive";

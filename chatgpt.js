@@ -177,8 +177,20 @@ const generateTrial = (
   return prompt;
 };
 
-const generateEpisodeFinale = (MARTA_EPISODE_PROMPT) => {
-  return `Rispondimi solo con il finale di questa avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole`;
+const generateEpisodeFinale = (MARTA_EPISODE_PROMPT, overallSuccess) => {
+  if (overallSuccess === 7) {
+    return `Rispondimi solo con il finale di questa avventura in cui tutte le prove sono state superate e il nemico sconfitto, impersonando il game Master, utilizza al massimo 150 parole`;
+  } else if (overallSuccess === 6 || overallSuccess === 5) {
+    return `Rispondimi solo con il finale di questa avventura in cui il nemico è sconfitto, impersonando il game Master, utilizza al massimo 150 parole`;
+  } else if (overallSuccess === 4) {
+    return `Rispondimi solo con il finale di questa avventura in cui il nemico è sconfitto per un soffio, non senza molte difficoltà, impersonando il game Master, utilizza al massimo 150 parole`;
+  } else if (overallSuccess === 3) {
+    return `Rispondimi solo con il finale di questa avventura in cui le prove sono state superate ma il nemico non è stato sconfitto, ma c'è speranza in una prossima avventura, impersonando il game Master, utilizza al massimo 150 parole`;
+  } else if (overallSuccess === 2 || overallSuccess === 1) {
+    return `Rispondimi solo con il finale di questa avventura il nemico non è stato sconfitto,ma c'è ancora un barlume di speranza anche se i nostri eroi sono sconfitti e feriti, impersonando il game Master, utilizza al massimo 150 parole`;
+  } else if (overallSuccess === 0) {
+    return `Rispondimi solo con il finale di questa avventura il nemico non è stato sconfitto,e non c'è modo di sconfiggerlo, i nostri eroi sono sconfitti e feriti, impersonando il game Master, utilizza al massimo 150 parole`;
+  }
 };
 const generateMartaPrompt = (MARTA_EPISODE_PROMPT) => {
   let prompt =
