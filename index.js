@@ -6,7 +6,7 @@ require("dotenv").config();
 const PORT = process.env.PORT || 5000;
 const persona = require("./persona");
 const spell = require("./spell");
-let USERS_CACHE = [481189001, -1001845883499];
+let USERS_CACHE = [481189001, -1001845883499, 6482260157];
 // let USERS_CACHE = [481189001];
 require("./images");
 const chatgpt = require("./chatgpt");
