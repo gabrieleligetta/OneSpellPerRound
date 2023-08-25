@@ -467,11 +467,13 @@ cron.schedule("0 1 * * *", async () => {
   console.log(MARTA_EPISODE_PROMPT);
 });
 
-// bot.on("text", async (ctx) => {
-//   USERS_CACHE.push(ctx.chat.id);
-//   USERS_CACHE = [...new Set(USERS_CACHE)];
-//   console.log("aggiungo " + ctx.chat.id + " alla cache!");
-//   console.log("chache:  " + USERS_CACHE);
+bot.on("text", async (ctx) => {
+  USERS_CACHE.push(ctx.chat.id);
+  USERS_CACHE = [...new Set(USERS_CACHE)];
+  console.log("aggiungo " + ctx.chat.id + " alla cache!");
+  console.log("chache:  " + USERS_CACHE);
+});
+
 //   let msg = ctx.message.text;
 //   let msgArray = msg.split(" ");
 //   let tomoArray = ["diario", "tomo", "quaderno", "libro"];
