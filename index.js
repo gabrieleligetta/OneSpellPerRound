@@ -2,9 +2,6 @@ const telegraf = require("telegraf");
 require("dotenv").config();
 const persona = require("./persona");
 const spell = require("./spell");
-let USERS_CACHE = [481189001, -1001845883499, 6482260157];
-// let USERS_CACHE = [481189001];
-require("./images");
 const chatgpt = require("./chatgpt");
 const { chunk, abstractDice } = require("./utils");
 const { Markup, session } = require("telegraf");
@@ -17,7 +14,15 @@ const {
   setInUniqueActionArray,
   getUniqueActionArray,
   removeInUniqueActionArray,
+  setInUserCache,
+  setMartaEpisodePrompt,
 } = require("./cache");
+const cron = require("node-cron");
+const {
+  randomSpellBroadcast,
+  raccontoDiMartaBroadcast,
+} = require("./broadcasts");
+const { generateEpisodeFormat } = require("./prompts");
 const token = process.env.BOT_TOKEN;
 if (token === undefined) {
   throw new Error("BOT_TOKEN must be provided!");
@@ -36,20 +41,16 @@ bot.command("randomchar", async (ctx) => {
 
 bot.command("randomrolledchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  //name
   let msg = ctx.message.text;
   let charLevel = 1;
-  //name
   let reply = await persona.getStandardChar(msg, charLevel, "rolled");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
 
 bot.command("randombestchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  //name
   let msg = ctx.message.text;
   let charLevel = 1;
-  //name
   let reply = await persona.getStandardChar(msg, charLevel, "best");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
@@ -116,11 +117,29 @@ bot.action("rollDice", async (ctx) => {
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
 
+cron.schedule("0 10 * * *", async () => {
+  await randomSpellBroadcast(bot);
+});
+
+cron.schedule("00 16 * * *", async () => {
+  console.log("sono nel chron di Marta");
+  try {
+    await raccontoDiMartaBroadcast(bot);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+cron.schedule("0 1 * * *", async () => {
+  console.log("sono nel chron di MARTA_EPISODE_PROMPT");
+  const episode = await generateEpisodeFormat();
+  setMartaEpisodePrompt(episode);
+});
+
 bot.on("text", async (ctx) => {
-  USERS_CACHE.push(ctx.chat.id);
-  USERS_CACHE = [...new Set(USERS_CACHE)];
+  const cache = setInUserCache(ctx.chat.id);
   console.log("aggiungo " + ctx.chat.id + " alla cache!");
-  console.log("chache:  " + USERS_CACHE);
+  console.log("chache:  " + cache);
 });
 
 bot.help(async (ctx) => {
@@ -129,8 +148,8 @@ bot.help(async (ctx) => {
       " - /help\n" +
       " - /randomchar\n" +
       " - /randomspell\n" +
-      " -/randomrolledchar\n" +
-      " -/randombestchar"
+      " - /randomrolledchar\n" +
+      " - /randombestchar"
   );
 });
 
