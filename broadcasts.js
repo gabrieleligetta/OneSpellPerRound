@@ -39,7 +39,7 @@ const raccontoDiMartaBroadcast = async (bot) => {
   let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   try {
     if (!MARTA_EPISODE_PROMPT) {
-      MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+      await generateEpisodeFormat();
     }
     console.log("sono nel broadcast");
     if (USERS_CACHE.length) {

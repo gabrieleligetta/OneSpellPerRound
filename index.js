@@ -132,8 +132,7 @@ cron.schedule("00 16 * * *", async () => {
 
 cron.schedule("0 1 * * *", async () => {
   console.log("sono nel chron di MARTA_EPISODE_PROMPT");
-  const episode = await generateEpisodeFormat();
-  setMartaEpisodePrompt(episode);
+  await generateEpisodeFormat();
 });
 
 bot.on("text", async (ctx) => {
