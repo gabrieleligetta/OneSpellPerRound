@@ -15,7 +15,6 @@ const {
   getUniqueActionArray,
   removeInUniqueActionArray,
   setInUserCache,
-  setMartaEpisodePrompt,
 } = require("./cache");
 const cron = require("node-cron");
 const {
