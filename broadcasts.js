@@ -3,11 +3,17 @@ const { Prompts } = require("./utils");
 const spell = require("./spell");
 const { generateEpisodeFormat } = require("./prompts");
 const { Markup } = require("telegraf");
-const randomSpellBroadcast = async () => {
+const {
+  getUserCache,
+  getMartaEpisodePrompt,
+  setInUniqueActionArray,
+} = require("./cache");
+const randomSpellBroadcast = async (bot) => {
   const richiesta =
     "rispondimi solo con una battuta divertente a tema fantasy senza che sembri la risposta di un bot";
+  const USERS_CACHE = getUserCache();
   if (USERS_CACHE.length) {
-    let battuta = await chatgpt.prompt(
+    let battuta = await chatgpt.generalPrompt(
       { text: richiesta, temperature: 0.7 },
       Prompts.BattuteDnD
     );
@@ -28,7 +34,9 @@ const randomSpellBroadcast = async () => {
   }
 };
 
-const raccontoDiMartaBroadcast = async () => {
+const raccontoDiMartaBroadcast = async (bot) => {
+  const USERS_CACHE = getUserCache();
+  let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   try {
     if (!MARTA_EPISODE_PROMPT) {
       MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
@@ -40,7 +48,7 @@ const raccontoDiMartaBroadcast = async () => {
         await bot.telegram.sendPhoto(chatId, {
           source: "./imgs/witch2.jpeg",
         });
-        uniqueActionArray.push(chatId);
+        setInUniqueActionArray(chatId);
         await bot.telegram.sendMessage(
           chatId,
           "Avviare una nuova avventura di Marta la papera col cappello da strega?",
