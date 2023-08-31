@@ -1,7 +1,6 @@
 const WizardScene = require("telegraf/scenes/wizard");
 const Composer = require("telegraf/composer");
 const { createCharacter } = require("../game/characters");
-import { message } from "telegraf/filters";
 
 const step1 = async (ctx) => {
   ctx.reply("Come si chiamerà il tuo personaggio?");
@@ -10,7 +9,7 @@ const step1 = async (ctx) => {
 
 const step2 = new Composer();
 
-step2.on(message("text"), async (ctx) => {
+step2.on("text", async (ctx) => {
   ctx.reply("Oh, splendido nome.");
   const name = ctx.update.message.text;
   const chat_id = ctx.chat.id;
