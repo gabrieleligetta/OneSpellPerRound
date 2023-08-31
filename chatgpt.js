@@ -1,8 +1,13 @@
-const axios = require("axios");
-const { Prompts } = require("./utils");
+import { Prompts } from "./utils.js";
+import axios from "axios";
+
 const martaMessages = new Map();
 
-async function generalPrompt(richiesta, type = null, model = "gpt-3.5-turbo") {
+export async function generalPrompt(
+  richiesta,
+  type = null,
+  model = "gpt-3.5-turbo"
+) {
   if (!richiesta.text) {
     richiesta.text =
       "Sei un comico affermato che ritorna freddure a tema fantasy";
@@ -53,7 +58,7 @@ async function generalPrompt(richiesta, type = null, model = "gpt-3.5-turbo") {
   }
 }
 
-async function promptForMarta(
+export async function promptForMarta(
   request,
   temperature = 1,
   model = "gpt-3.5-turbo",
@@ -122,8 +127,3 @@ async function promptForMarta(
     console.log(e.response.data.error);
   }
 }
-
-module.exports = {
-  generalPrompt,
-  promptForMarta,
-};

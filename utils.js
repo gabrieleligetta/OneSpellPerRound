@@ -1,19 +1,19 @@
-const faker = require("faker");
+import faker from "faker";
 
-const Prompts = {
+export const Prompts = {
   MartaLaPapera: "MartaLaPapera",
   BattuteDnD: "BattuteDnD",
   EpisodePromptValues: "EpisodePromptValues",
 };
 
-function extractStringBetweenCharacters(inputString, char1, char2) {
+export function extractStringBetweenCharacters(inputString, char1, char2) {
   const regex = new RegExp(`${char1}.*?${char2}`);
   const result = inputString.match(regex);
 
   return result ? result[0] : null;
 }
 
-function getRandomElementsFromArray(arr, number) {
+export function getRandomElementsFromArray(arr, number) {
   if (number < 1 || typeof number !== "number") {
     number = 2;
   }
@@ -42,7 +42,7 @@ function getRandomElementsFromArray(arr, number) {
   return selectedElements;
 }
 
-function getRandomAndRemove(arr) {
+export function getRandomAndRemove(arr) {
   // Check if the array is empty
   if (arr.length === 0) {
     return undefined; // Return undefined if the array is empty
@@ -60,7 +60,7 @@ function getRandomAndRemove(arr) {
   return randomElement;
 }
 
-const removeCharExceptFirstAndLast = (inputString, character) => {
+export const removeCharExceptFirstAndLast = (inputString, character) => {
   const firstIndex = inputString.indexOf(character);
   const lastIndex = inputString.lastIndexOf(character);
 
@@ -79,56 +79,49 @@ const removeCharExceptFirstAndLast = (inputString, character) => {
   );
 };
 
-const chunk = (str, size) =>
+export const chunk = (str, size) =>
   Array.from({ length: Math.ceil(str.length / size) }, (v, i) =>
     str.slice(i * size, i * size + size)
   );
 
-module.exports = {
-  Prompts,
-  extractStringBetweenCharacters,
-  chunk,
-  getRandomElementsFromArray,
-  getRandomAndRemove,
-  removeCharExceptFirstAndLast,
-  getRandomName: function () {
-    return faker.name.findName();
-  },
-  abstractDice: function (min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  },
-  makeUpperCaseAfterCommas: function (str) {
-    return str.replace(/,\s*([a-z])/g, function (d, e) {
-      return ", " + e.toUpperCase();
-    });
-  },
-  replyEscaper: function (reply) {
-    reply = reply.split("-").join("-");
-    reply = reply.split(".").join(".");
-    reply = reply.split("(").join("(");
-    reply = reply.split(")").join(")");
-    return reply;
-  },
-  removeFromArray: function (array, value) {
-    let index = array.indexOf(value);
-    return array.splice(index, 1);
-  },
-  removeSmallest: function (arr) {
-    const smallest = Math.min(...arr);
-    const index = arr.indexOf(smallest);
+export const abstractDice = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
-    return arr.filter((_, i) => i !== index);
-  },
-  makeid: function (length) {
-    let result = "";
-    const characters =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const charactersLength = characters.length;
-    let counter = 0;
-    while (counter < length) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-      counter += 1;
-    }
-    return result;
-  },
+export const getRandomName = () => {
+  return faker.name.findName();
+};
+export const makeUpperCaseAfterCommas = (str) => {
+  return str.replace(/,\s*([a-z])/g, function (d, e) {
+    return ", " + e.toUpperCase();
+  });
+};
+export const replyEscaper = (reply) => {
+  reply = reply.split("-").join("-");
+  reply = reply.split(".").join(".");
+  reply = reply.split("(").join("(");
+  reply = reply.split(")").join(")");
+  return reply;
+};
+export const removeFromArray = (array, value) => {
+  let index = array.indexOf(value);
+  return array.splice(index, 1);
+};
+export const removeSmallest = (arr) => {
+  const smallest = Math.min(...arr);
+  const index = arr.indexOf(smallest);
+
+  return arr.filter((_, i) => i !== index);
+};
+export const makeid = (length) => {
+  let result = "";
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const charactersLength = characters.length;
+  let counter = 0;
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    counter += 1;
+  }
+  return result;
 };

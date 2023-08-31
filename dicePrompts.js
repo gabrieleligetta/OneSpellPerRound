@@ -1,4 +1,4 @@
-const generateDiceRollPrompt = (roll, difficulty, ctx) => {
+export const generateDiceRollPrompt = (roll, difficulty, ctx) => {
   if (!ctx.session[ctx.chat.id]?.overallSuccess) {
     ctx.session[ctx.chat.id]["overallSuccess"] = 0;
   }
@@ -60,8 +60,4 @@ const getDegree = (roll, difficulty) => {
   } else if (degree <= -10) {
     return "extremely_negative";
   }
-};
-
-module.exports = {
-  generateDiceRollPrompt,
 };

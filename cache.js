@@ -1,5 +1,6 @@
-const axios = require("axios");
 //Global Variables caching system
+import axios from "axios";
+
 let classesGlobal;
 let scoresGlobal;
 let skillsGlobal;
@@ -43,39 +44,39 @@ let MARTA_EPISODE_PROMPT = {
 };
 //Global Variables caching system
 
-const getMartaEpisodePrompt = () => {
+export const getMartaEpisodePrompt = () => {
   return MARTA_EPISODE_PROMPT;
 };
 
-const setMartaEpisodePrompt = (episode) => {
+export const setMartaEpisodePrompt = (episode) => {
   MARTA_EPISODE_PROMPT = episode;
   return MARTA_EPISODE_PROMPT;
 };
 
-const getUserCache = () => {
+export const getUserCache = () => {
   return USERS_CACHE;
 };
 
-const setInUserCache = (user) => {
+export const setInUserCache = (user) => {
   USERS_CACHE.push(user);
   USERS_CACHE = [...new Set(USERS_CACHE)];
   return USERS_CACHE;
 };
 
-const getUniqueActionArray = () => {
+export const getUniqueActionArray = () => {
   return uniqueActionArray;
 };
 
-const setInUniqueActionArray = (item) => {
+export const setInUniqueActionArray = (item) => {
   uniqueActionArray.push(item);
   return uniqueActionArray;
 };
 
-const removeInUniqueActionArray = (item) => {
+export const removeInUniqueActionArray = (item) => {
   uniqueActionArray = uniqueActionArray.filter((e) => e !== item);
   return uniqueActionArray;
 };
-const getAbilityScores = async () => {
+export const getAbilityScores = async () => {
   if (scoresGlobal) {
     return scoresGlobal;
   } else {
@@ -85,7 +86,7 @@ const getAbilityScores = async () => {
   }
 };
 
-const getClasses = async () => {
+export const getClasses = async () => {
   if (classesGlobal) {
     return classesGlobal;
   } else {
@@ -94,7 +95,7 @@ const getClasses = async () => {
   }
 };
 
-const getRaces = async () => {
+export const getRaces = async () => {
   if (racesGlobal) {
     return racesGlobal;
   } else {
@@ -103,7 +104,7 @@ const getRaces = async () => {
   }
 };
 
-const getSkills = async () => {
+export const getSkills = async () => {
   if (skillsGlobal) {
     return skillsGlobal;
   } else {
@@ -112,7 +113,7 @@ const getSkills = async () => {
   }
 };
 
-const getSpells = async () => {
+export const getSpells = async () => {
   if (spellsGlobal) {
     return spellsGlobal;
   } else {
@@ -121,7 +122,7 @@ const getSpells = async () => {
   }
 };
 
-const getTraitData = async (url) => {
+export const getTraitData = async (url) => {
   if (traitsGlobalArray[url]) {
     return traitsGlobalArray[url];
   } else {
@@ -130,20 +131,4 @@ const getTraitData = async (url) => {
     ).data;
     return traitsGlobalArray[url];
   }
-};
-
-module.exports = {
-  getUserCache,
-  setInUserCache,
-  getMartaEpisodePrompt,
-  setMartaEpisodePrompt,
-  getUniqueActionArray,
-  setInUniqueActionArray,
-  removeInUniqueActionArray,
-  getAbilityScores,
-  getClasses,
-  getRaces,
-  getSkills,
-  getSpells,
-  getTraitData,
 };

@@ -1,14 +1,15 @@
-const {
+import { Markup } from "telegraf";
+import { getMartaEpisodePrompt, setInUniqueActionArray } from "./cache.js";
+import {
+  generateEpisodeFinale,
   generateEpisodeFormat,
   generateIntroducktion,
   generateTrial,
-  generateEpisodeFinale,
-} = require("./prompts");
-const chatgpt = require("./chatgpt");
-const { chunk, abstractDice, makeid } = require("./utils");
-const { Markup } = require("telegraf");
-const { setInUniqueActionArray, getMartaEpisodePrompt } = require("./cache");
-const avventuraInterattivaMartaLaPapera = async (ctx) => {
+} from "./prompts.js";
+import { promptForMarta } from "./chatgpt.js";
+import { abstractDice, chunk } from "./utils.js";
+
+export const avventuraInterattivaMartaLaPapera = async (ctx) => {
   let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   if (!MARTA_EPISODE_PROMPT) {
     MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
@@ -17,7 +18,7 @@ const avventuraInterattivaMartaLaPapera = async (ctx) => {
   ctx.session[ctx.chat.id]["dungeonData"] = 0;
   const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let reply = await chatgpt.promptForMarta(
+  let reply = await promptForMarta(
     richiesta,
     1,
     "gpt-3.5-turbo",
@@ -42,7 +43,7 @@ const avventuraInterattivaMartaLaPapera = async (ctx) => {
     ctx.session[ctx.chat.id].dungeonData
   );
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  reply = await chatgpt.promptForMarta(
+  reply = await promptForMarta(
     firstTrial,
     1,
     "gpt-3.5-turbo",
@@ -62,7 +63,7 @@ const avventuraInterattivaMartaLaPapera = async (ctx) => {
   );
 };
 
-const sendFollowUpMessage = async (ctx) => {
+export const sendFollowUpMessage = async (ctx) => {
   let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   if (ctx.session[ctx.chat.id].dungeonData === 1) {
     ctx.session[ctx.chat.id].dungeonData++;
@@ -79,7 +80,7 @@ const sendFollowUpMessage = async (ctx) => {
       ctx.session[ctx.chat.id].dungeonData
     );
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    const reply = await chatgpt.promptForMarta(
+    const reply = await promptForMarta(
       secondTrial,
       1,
       "gpt-3.5-turbo",
@@ -112,7 +113,7 @@ const sendFollowUpMessage = async (ctx) => {
       ctx.session[ctx.chat.id].dungeonData
     );
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    const reply = await chatgpt.promptForMarta(
+    const reply = await promptForMarta(
       thirdTrial,
       1,
       "gpt-3.5-turbo",
@@ -142,7 +143,7 @@ const sendFollowUpMessage = async (ctx) => {
     console.log("ctx.session[ctx.chat.id].overallSuccess");
     console.log(ctx.session[ctx.chat.id].overallSuccess);
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    const reply = await chatgpt.promptForMarta(
+    const reply = await promptForMarta(
       finale,
       1,
       "gpt-3.5-turbo",
@@ -153,9 +154,4 @@ const sendFollowUpMessage = async (ctx) => {
       await ctx.telegram.sendMessage(ctx.chat.id, part);
     }
   }
-};
-
-module.exports = {
-  avventuraInterattivaMartaLaPapera,
-  sendFollowUpMessage,
 };
