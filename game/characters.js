@@ -1,7 +1,8 @@
-const { writeToCollection } = require("../mongoDB");
+import { writeToCollection } from "../mongoDB.js";
+
 const collection = "characters";
 
-const createCharacter = async (chatId, owner, name) => {
+export const createCharacter = async (chatId, owner, name) => {
   const character = {
     chatId,
     owner,
@@ -13,8 +14,4 @@ const createCharacter = async (chatId, owner, name) => {
   };
   await writeToCollection(collection, character);
   return character;
-};
-
-module.exports = {
-  createCharacter,
 };

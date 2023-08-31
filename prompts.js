@@ -1,13 +1,16 @@
-const randomItem = require("random-item");
-const {
+import randomItem from "random-item";
+
+import {
   getRandomAndRemove,
   getRandomElementsFromArray,
   Prompts,
   removeCharExceptFirstAndLast,
-} = require("./utils");
-const { generalPrompt } = require("./chatgpt");
-const { setMartaEpisodePrompt } = require("./cache");
-const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
+} from "./utils.js";
+
+import { generalPrompt } from "./chatgpt.js";
+import { setMartaEpisodePrompt } from "./cache.js";
+
+export const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
   let prompt =
     "Rispondimi solo con l'inizio di un'avventura di Marta la papera con il cappello da strega, impersonando il game Master, utilizza al massimo 150 parole";
   if (!!MARTA_EPISODE_PROMPT) {
@@ -27,7 +30,7 @@ const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
   return prompt;
 };
 
-const generateTrial = (
+export const generateTrial = (
   MARTA_EPISODE_PROMPT,
   trialStage,
   difficulty,
@@ -53,7 +56,7 @@ const generateTrial = (
   return prompt;
 };
 
-const generateEpisodeFinale = (MARTA_EPISODE_PROMPT, overallSuccess) => {
+export const generateEpisodeFinale = (MARTA_EPISODE_PROMPT, overallSuccess) => {
   if (overallSuccess === 7) {
     return `Rispondimi solo con il finale di questa avventura in cui tutte le prove sono state superate e il nemico sconfitto, impersonando il game Master, utilizza al massimo 150 parole`;
   } else if (overallSuccess === 6 || overallSuccess === 5) {
@@ -69,7 +72,7 @@ const generateEpisodeFinale = (MARTA_EPISODE_PROMPT, overallSuccess) => {
   }
 };
 
-const generateEpisodeFormat = async () => {
+export const generateEpisodeFormat = async () => {
   const loreArray = ["Dungeons and Dragons"];
   const lore = randomItem(loreArray);
   const boss = randomItem(
@@ -149,10 +152,3 @@ const generateArrayOf = async (narrationElement, lore) => {
 
 const getStringBetweenHashes = (input) =>
   (input.match(/#(.*?)#/) || [])[1] || null;
-
-module.exports = {
-  generateEpisodeFormat,
-  generateIntroducktion,
-  generateTrial,
-  generateEpisodeFinale,
-};

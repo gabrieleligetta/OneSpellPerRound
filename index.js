@@ -1,35 +1,32 @@
-const telegraf = require("telegraf");
-const session = require("telegraf/session");
-const Stage = require("telegraf/stage");
-const Markup = require("telegraf/markup");
-require("dotenv").config();
-const persona = require("./persona");
-const spell = require("./spell");
-const chatgpt = require("./chatgpt");
-const { chunk, abstractDice } = require("./utils");
-const { generateDiceRollPrompt } = require("./dicePrompts");
-const {
-  avventuraInterattivaMartaLaPapera,
-  sendFollowUpMessage,
-} = require("./avventuraMartaLaPapera");
-const {
-  setInUniqueActionArray,
+import { Markup, session, Telegraf } from "telegraf";
+import dotenv from "dotenv";
+import {
   getUniqueActionArray,
   removeInUniqueActionArray,
+  setInUniqueActionArray,
   setInUserCache,
-} = require("./cache");
-const cron = require("node-cron");
-const {
-  randomSpellBroadcast,
-  raccontoDiMartaBroadcast,
-} = require("./broadcasts");
-const { generateEpisodeFormat } = require("./prompts");
+} from "./cache.js";
+import { generateDiceRollPrompt } from "./dicePrompts.js";
+import { abstractDice, chunk } from "./utils.js";
+import {
+  avventuraInterattivaMartaLaPapera,
+  sendFollowUpMessage,
+} from "./avventuraMartaLaPapera.js";
+import { promptForMarta } from "./chatgpt.js";
+import { cs } from "./scenes/characterScene.js";
+import { getStandardChar } from "./persona.js";
+import { getSpell } from "./spell.js";
+import { message } from "telegraf/filters";
+import { Stage } from "telegraf/scenes";
+
+dotenv.config();
+
 const token = process.env.BOT_TOKEN;
 if (token === undefined) {
   throw new Error("BOT_TOKEN must be provided!");
 }
-const cs = require("./scenes/characterScene").cs;
-const bot = new telegraf(token);
+
+const bot = new Telegraf(token);
 
 const stage = new Stage([cs]);
 
@@ -37,7 +34,7 @@ bot.command("randomchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
   let msg = ctx.message.text;
   let charLevel = 1;
-  let reply = await persona.getStandardChar(msg, charLevel, "standard");
+  let reply = await getStandardChar(msg, charLevel, "standard");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
 
@@ -45,7 +42,7 @@ bot.command("randomrolledchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
   let msg = ctx.message.text;
   let charLevel = 1;
-  let reply = await persona.getStandardChar(msg, charLevel, "rolled");
+  let reply = await getStandardChar(msg, charLevel, "rolled");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
 
@@ -53,13 +50,13 @@ bot.command("randombestchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
   let msg = ctx.message.text;
   let charLevel = 1;
-  let reply = await persona.getStandardChar(msg, charLevel, "best");
+  let reply = await getStandardChar(msg, charLevel, "best");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
 
 bot.command("randomspell", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let reply = await spell.getSpell("random");
+  let reply = await getSpell("random");
   await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 });
 
@@ -73,22 +70,20 @@ bot.command("enterDungeon", async (ctx) => {
     ctx.chat.id,
     "Avviare una nuova avventura di Marta la papera col cappello da strega?",
     Markup.inlineKeyboard([
-      Markup.callbackButton("Tira Il Dado!", "startMartaAdventure", false),
-    ]).extra()
+      Markup.button.callback("Tira Il Dado!", "startMartaAdventure", false),
+    ])
   );
 });
 
 bot.command("createCharacter", async (ctx) => {
-  console.log("owner");
-  console.log(ctx.message);
   let userFirstName = ctx.message.from.first_name;
   let message = ` Ciao ${userFirstName}, ti guiderò nella creazione del tuo personaggio. \n
     Sei una papera?`;
 
   let options = Markup.inlineKeyboard([
-    Markup.callbackButton("🦆", "characterScene"),
-    Markup.callbackButton("🦢", "characterScene"),
-  ]).extra();
+    Markup.button.callback("🦆", "characterScene"),
+    Markup.button.callback("🦢", "characterScene"),
+  ]);
   await ctx.reply(message, options);
 });
 
@@ -115,7 +110,7 @@ bot.action("rollDice", async (ctx) => {
       ctx
     );
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    const reply = await chatgpt.promptForMarta(
+    const reply = await promptForMarta(
       prompt,
       1,
       "gpt-3.5-turbo",
@@ -133,7 +128,7 @@ bot.action("rollDice", async (ctx) => {
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
 
-bot.on("text", async (ctx) => {
+bot.on(message("text"), async (ctx) => {
   setInUserCache(ctx.chat.id);
 });
 
@@ -142,6 +137,7 @@ bot.on("text", async (ctx) => {
 // });
 //
 // cron.schedule("00 16 * * *", async () => {
+//   console.log("sono nel chron di Marta");
 //   console.log("sono nel chron di Marta");
 //   try {
 //     await raccontoDiMartaBroadcast(bot);
