@@ -20,7 +20,14 @@ const getMongoDBClient = () => {
 export const writeToCollection = async (collection, objToWrite) => {
   const database = getMongoDBClient();
   const currentCollection = database.collection(collection);
-  const result = await currentCollection.insertOne(objToWrite);
+  const now = new Date().toISOString();
+  if (!objToWrite?.createdAt) {
+    objToWrite.createdAt = now;
+    objToWrite.updatedAt = now;
+  } else {
+    objToWrite.updatedAt = now;
+  }
+  const result = await currentCollection.insertOne(objToWrite, {});
   console.log(`A document was inserted with the _id: ${result.insertedId}`);
   return result;
 };
