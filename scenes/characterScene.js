@@ -1,18 +1,17 @@
 import { Composer } from "telegraf";
 import { createCharacter } from "../game/characters.js";
 import { WizardScene } from "telegraf/scenes";
-import { message } from "telegraf/filters";
 
 const step1 = async (ctx) => {
   ctx.reply("Come si chiamerà il tuo personaggio?");
-  console.log("ctx.wizard.next()");
-  console.log(ctx.wizard.next());
   return ctx.wizard.next();
 };
 
 const step2 = new Composer();
 
-step2.on(message("text"), async (ctx) => {
+step2.on("text", async (ctx) => {
+  console.log("ctx.message.text;");
+  console.log(ctx.message.text);
   ctx.reply("Oh, splendido nome.");
   const name = ctx.update.message.text;
   const chat_id = ctx.chat.id;
@@ -22,7 +21,7 @@ step2.on(message("text"), async (ctx) => {
     await ctx.replyWithHTML(
       `Il personaggio appena creato: \n nome: <b>${char.name}</b>\n livello: <b>${char.level}</b>`
     );
-    leaveScene();
+    leaveScene(ctx);
   } else {
     ctx.reply(`c'è stato un errore durante la creazione del tuo personaggio`);
     ctx.reply("Proviamo di nuovo");
@@ -41,4 +40,8 @@ step2.command("cancel", (ctx) => {
   return ctx.scene.leave();
 });
 
-export const cs = new WizardScene("characterScene", (ctx) => step1(ctx), step2);
+export const characterScene = new WizardScene(
+  "characterScene",
+  (ctx) => step1(ctx),
+  step2
+);

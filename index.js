@@ -13,7 +13,7 @@ import {
   sendFollowUpMessage,
 } from "./avventuraMartaLaPapera.js";
 import { promptForMarta } from "./chatgpt.js";
-import { cs } from "./scenes/characterScene.js";
+import { characterScene } from "./scenes/characterScene.js";
 import { getStandardChar } from "./persona.js";
 import { getSpell } from "./spell.js";
 import { message } from "telegraf/filters";
@@ -27,8 +27,9 @@ if (token === undefined) {
 }
 
 const bot = new Telegraf(token);
+bot.use(session());
 
-const stage = new Stage([cs]);
+const stage = new Stage([characterScene]);
 
 bot.command("randomchar", async (ctx) => {
   await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
@@ -75,18 +76,6 @@ bot.command("enterDungeon", async (ctx) => {
   );
 });
 
-bot.command("createCharacter", async (ctx) => {
-  let userFirstName = ctx.message.from.first_name;
-  let message = ` Ciao ${userFirstName}, ti guiderò nella creazione del tuo personaggio. \n
-    Sei una papera?`;
-
-  let options = Markup.inlineKeyboard([
-    Markup.button.callback("🦆", "characterScene"),
-    Markup.button.callback("🦢", "characterScene"),
-  ]);
-  await ctx.reply(message, options);
-});
-
 bot.action("startMartaAdventure", async (ctx) => {
   const uniqueActionArray = getUniqueActionArray();
   if (uniqueActionArray.includes(ctx.chat.id)) {
@@ -128,6 +117,10 @@ bot.action("rollDice", async (ctx) => {
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
 
+bot.use(stage.middleware());
+
+bot.command("createCharacter", Stage.enter("characterScene"));
+
 bot.on(message("text"), async (ctx) => {
   setInUserCache(ctx.chat.id);
 });
@@ -150,10 +143,5 @@ bot.on(message("text"), async (ctx) => {
 //   console.log("sono nel chron di MARTA_EPISODE_PROMPT");
 //   await generateEpisodeFormat();
 // });
-
-bot.use(session());
-bot.use(stage.middleware());
-
-bot.action("characterScene", Stage.enter("characterScene"));
 
 bot.launch();
