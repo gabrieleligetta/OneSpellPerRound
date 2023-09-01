@@ -27,38 +27,42 @@ if (token === undefined) {
 }
 
 const bot = new Telegraf(token);
-bot.use(session());
+bot.use(session({ defaultSession: () => ({ sessionCounter: 0 }) }));
 
 const stage = new Stage([characterScene]);
 
 bot.command("randomchar", async (ctx) => {
-  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let msg = ctx.message.text;
-  let charLevel = 1;
-  let reply = await getStandardChar(msg, charLevel, "standard");
-  await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  await ctx.persistentChatAction("typing", async () => {
+    let msg = ctx.message.text;
+    let charLevel = 1;
+    let reply = await getStandardChar(msg, charLevel, "standard");
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  });
 });
 
 bot.command("randomrolledchar", async (ctx) => {
-  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let msg = ctx.message.text;
-  let charLevel = 1;
-  let reply = await getStandardChar(msg, charLevel, "rolled");
-  await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  await ctx.persistentChatAction("typing", async () => {
+    let msg = ctx.message.text;
+    let charLevel = 1;
+    let reply = await getStandardChar(msg, charLevel, "rolled");
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  });
 });
 
 bot.command("randombestchar", async (ctx) => {
-  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let msg = ctx.message.text;
-  let charLevel = 1;
-  let reply = await getStandardChar(msg, charLevel, "best");
-  await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  await ctx.persistentChatAction("typing", async () => {
+    let msg = ctx.message.text;
+    let charLevel = 1;
+    let reply = await getStandardChar(msg, charLevel, "best");
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  });
 });
 
 bot.command("randomspell", async (ctx) => {
-  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-  let reply = await getSpell("random");
-  await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  await ctx.persistentChatAction("typing", async () => {
+    let reply = await getSpell("random");
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+  });
 });
 
 bot.command("enterDungeon", async (ctx) => {
@@ -77,6 +81,8 @@ bot.command("enterDungeon", async (ctx) => {
 });
 
 bot.action("startMartaAdventure", async (ctx) => {
+  console.log("ctx.session--startMartaAdventure");
+  console.log(ctx.session);
   const uniqueActionArray = getUniqueActionArray();
   if (uniqueActionArray.includes(ctx.chat.id)) {
     removeInUniqueActionArray(ctx.chat.id);
@@ -98,17 +104,18 @@ bot.action("rollDice", async (ctx) => {
       ctx.session[ctx.chat.id].trialDifficulty,
       ctx
     );
-    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    const reply = await promptForMarta(
-      prompt,
-      1,
-      "gpt-3.5-turbo",
-      ctx.session[ctx.chat.id].dungeonData,
-      ctx.chat.id
-    );
-    for (const part of chunk(reply, 4096)) {
-      await ctx.telegram.sendMessage(ctx.chat.id, part);
-    }
+    await ctx.persistentChatAction("typing", async () => {
+      const reply = await promptForMarta(
+        prompt,
+        1,
+        "gpt-3.5-turbo",
+        ctx.session[ctx.chat.id].dungeonData,
+        ctx.chat.id
+      );
+      for (const part of chunk(reply, 4096)) {
+        await ctx.telegram.sendMessage(ctx.chat.id, part);
+      }
+    });
     await sendFollowUpMessage(ctx);
   } else {
     return ctx.answerCbQuery("You already rolled the dice!");
