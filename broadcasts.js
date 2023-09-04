@@ -9,7 +9,7 @@ const {
   setInUniqueActionArray,
 } = require("./cache");
 const { MARTA_SUBS, SPELLS_SUBS } = require("./constants.js");
-const randomSpellBroadcast = async (bot) => {
+export const randomSpellBroadcast = async (bot) => {
   const richiesta =
     "rispondimi solo con una battuta divertente a tema fantasy senza che sembri la risposta di un bot";
   const USERS_CACHE = await getBroadcastSubs(SPELLS_SUBS);
@@ -35,7 +35,7 @@ const randomSpellBroadcast = async (bot) => {
   }
 };
 
-const raccontoDiMartaBroadcast = async (bot) => {
+export const raccontoDiMartaBroadcast = async (bot) => {
   const USERS_CACHE = await getBroadcastSubs(MARTA_SUBS);
   let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   try {
