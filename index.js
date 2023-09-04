@@ -19,6 +19,12 @@ import { getStandardChar } from "./persona.js";
 import { MARTA_SUBS, SPELLS_SUBS } from "./constants.js";
 import { getSpell } from "./spell.js";
 import { Stage } from "telegraf/scenes";
+import cron from "node-cron";
+import {
+  raccontoDiMartaBroadcast,
+  randomSpellBroadcast,
+} from "./broadcasts.js";
+import { generateEpisodeFormat } from "./prompts.js";
 
 dotenv.config();
 
@@ -171,23 +177,23 @@ bot.use(stage.middleware());
 
 bot.command("createCharacter", Stage.enter("characterScene"));
 
-// cron.schedule("0 10 * * *", async () => {
-//   await randomSpellBroadcast(bot);
-// });
-//
-// cron.schedule("00 16 * * *", async () => {
-//   console.log("sono nel chron di Marta");
-//   console.log("sono nel chron di Marta");
-//   try {
-//     await raccontoDiMartaBroadcast(bot);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// });
-//
-// cron.schedule("0 1 * * *", async () => {
-//   console.log("sono nel chron di MARTA_EPISODE_PROMPT");
-//   await generateEpisodeFormat();
-// });
+cron.schedule("0 10 * * *", async () => {
+  await randomSpellBroadcast(bot);
+});
+
+cron.schedule("00 16 * * *", async () => {
+  console.log("sono nel chron di Marta");
+  console.log("sono nel chron di Marta");
+  try {
+    await raccontoDiMartaBroadcast(bot);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+cron.schedule("0 1 * * *", async () => {
+  console.log("sono nel chron di MARTA_EPISODE_PROMPT");
+  await generateEpisodeFormat();
+});
 
 bot.launch();
