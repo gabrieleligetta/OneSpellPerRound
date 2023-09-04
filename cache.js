@@ -1,5 +1,8 @@
 //Global Variables caching system
 import axios from "axios";
+import { getFromCollection, writeToCollection } from "./mongoDB.js";
+
+const userBroadcast = "userBroadcast";
 
 let classesGlobal;
 let scoresGlobal;
@@ -8,7 +11,8 @@ let spellsGlobal;
 let racesGlobal;
 let traitsGlobalArray = [];
 let uniqueActionArray = [];
-let USERS_CACHE = [481189001, -1001845883499, 6482260157];
+// let MARTA_SUBS = [481189001, -1001845883499, 6482260157];
+// let SPELLS_SUBS = [481189001, -1001845883499, 6482260157];
 // let MARTA_EPISODE_PROMPT = null;
 let MARTA_EPISODE_PROMPT = {
   episodeFormat: "autoconclusivo",
@@ -53,14 +57,37 @@ export const setMartaEpisodePrompt = (episode) => {
   return MARTA_EPISODE_PROMPT;
 };
 
-export const getUserCache = () => {
+export const getBroadcastSubs = async (BroadcastType) => {
+  return await getFromCollection(userBroadcast, "BroadcastType", BroadcastType);
+};
+
+export const setInBroadcastSubs = async (BroadcastType, user) => {
+  let USERS_CACHE = await getBroadcastSubs(BroadcastType);
+  if (!!USERS_CACHE._id) {
+    USERS_CACHE.value.push(user);
+    USERS_CACHE.value = [...new Set(USERS_CACHE.value)];
+    await writeToCollection(userBroadcast, USERS_CACHE);
+  } else {
+    await writeToCollection(userBroadcast, {
+      BroadcastType: BroadcastType,
+      value: [user],
+    });
+  }
+
   return USERS_CACHE;
 };
 
-export const setInUserCache = (user) => {
-  USERS_CACHE.push(user);
-  USERS_CACHE = [...new Set(USERS_CACHE)];
-  return USERS_CACHE;
+export const removeInBroadcastSubs = async (BroadcastType, user) => {
+  let USERS_CACHE = await getBroadcastSubs(BroadcastType);
+  if (!!USERS_CACHE._id) {
+    USERS_CACHE.value = USERS_CACHE.value.filter((e) => e !== user);
+    await writeToCollection(userBroadcast, USERS_CACHE);
+  } else {
+    await writeToCollection(userBroadcast, {
+      BroadcastType: BroadcastType,
+      value: [],
+    });
+  }
 };
 
 export const getUniqueActionArray = () => {

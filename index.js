@@ -2,9 +2,10 @@ import { Markup, session, Telegraf } from "telegraf";
 import dotenv from "dotenv";
 import {
   getUniqueActionArray,
+  removeInBroadcastSubs,
   removeInUniqueActionArray,
+  setInBroadcastSubs,
   setInUniqueActionArray,
-  setInUserCache,
 } from "./cache.js";
 import { generateDiceRollPrompt } from "./dicePrompts.js";
 import { abstractDice, chunk } from "./utils.js";
@@ -15,8 +16,8 @@ import {
 import { promptForMarta } from "./chatgpt.js";
 import { characterScene } from "./scenes/characterScene.js";
 import { getStandardChar } from "./persona.js";
+import { MARTA_SUBS, SPELLS_SUBS } from "./constants.js";
 import { getSpell } from "./spell.js";
-import { message } from "telegraf/filters";
 import { Stage } from "telegraf/scenes";
 
 dotenv.config();
@@ -27,7 +28,7 @@ if (token === undefined) {
 }
 
 const bot = new Telegraf(token);
-bot.use(session({ defaultSession: () => ({ sessionCounter: 0 }) }));
+bot.use(session({ defaultSession: () => ({}) }));
 
 const stage = new Stage([characterScene]);
 
@@ -122,15 +123,53 @@ bot.action("rollDice", async (ctx) => {
   }
 });
 
+bot.command("sub", async (ctx) => {
+  await bot.telegram.sendMessage(
+    ctx.chat.id,
+    "A quale broadcast vuoi iscriverti?",
+    Markup.inlineKeyboard([
+      Markup.button.callback("Marta", "marta@subscribe", false),
+      Markup.button.callback("RandomSpell", "randomSpell@subscribe", false),
+    ])
+  );
+});
+
+bot.command("unsub", async (ctx) => {
+  await bot.telegram.sendMessage(
+    ctx.chat.id,
+    "Da quale broadcast vuoi uscire?",
+    Markup.inlineKeyboard([
+      Markup.button.callback("Marta", "marta@unsubscribe", false),
+      Markup.button.callback("RandomSpell", "randomSpell@unsubscribe", false),
+    ])
+  );
+});
+
+bot.action("marta@subscribe", async (ctx) => {
+  await setInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
+  return ctx.reply("Sottoscrizione effettuata");
+});
+
+bot.action("randomSpell@subscribe", async (ctx) => {
+  await setInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
+  return ctx.reply("Sottoscrizione effettuata");
+});
+
+bot.action("marta@unsubscribe", async (ctx) => {
+  await removeInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
+  return ctx.reply("Sottoscrizione rimossa");
+});
+
+bot.action("randomSpell@unsubscribe", async (ctx) => {
+  await removeInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
+  return ctx.reply("Sottoscrizione rimossa");
+});
+
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
 
 bot.use(stage.middleware());
 
 bot.command("createCharacter", Stage.enter("characterScene"));
-
-bot.on(message("text"), async (ctx) => {
-  setInUserCache(ctx.chat.id);
-});
 
 // cron.schedule("0 10 * * *", async () => {
 //   await randomSpellBroadcast(bot);
