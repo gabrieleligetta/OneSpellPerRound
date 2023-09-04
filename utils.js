@@ -125,3 +125,20 @@ export const makeid = (length) => {
   }
   return result;
 };
+
+export function filterObjectFromProperties(properties, obj) {
+  if (!!obj?._doc) {
+    obj = obj._doc;
+  }
+  const returningObject = {};
+  if (properties.length) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (!properties.includes(key)) {
+        returningObject[key] = value;
+      }
+    }
+    return returningObject;
+  } else {
+    return obj;
+  }
+}
