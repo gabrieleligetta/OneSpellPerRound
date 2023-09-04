@@ -1,20 +1,21 @@
-const chatgpt = require("./chatgpt");
-const { Prompts } = require("./utils");
-const spell = require("./spell");
-const { generateEpisodeFormat } = require("./prompts");
-const { Markup } = require("telegraf");
-const {
+import { generalPrompt } from "./chatgpt.js";
+import {
   getBroadcastSubs,
   getMartaEpisodePrompt,
   setInUniqueActionArray,
-} = require("./cache");
-const { MARTA_SUBS, SPELLS_SUBS } = require("./constants.js");
+} from "./cache.js";
+import { MARTA_SUBS, SPELLS_SUBS } from "./constants.js";
+import { Markup } from "telegraf";
+import { generateEpisodeFormat } from "./prompts.js";
+import { getSpell } from "./spell.js";
+import { Prompts } from "./utils.js";
+
 export const randomSpellBroadcast = async (bot) => {
   const richiesta =
     "rispondimi solo con una battuta divertente a tema fantasy senza che sembri la risposta di un bot";
   const USERS_CACHE = await getBroadcastSubs(SPELLS_SUBS);
   if (USERS_CACHE?.value?.length) {
-    let battuta = await chatgpt.generalPrompt(
+    let battuta = await generalPrompt(
       { text: richiesta, temperature: 0.7 },
       Prompts.BattuteDnD
     );
@@ -29,7 +30,7 @@ export const randomSpellBroadcast = async (bot) => {
       await bot.telegram.sendMessage(chatId, battuta);
       await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!");
       await bot.telegram.sendChatAction(chatId, "typing");
-      let reply = await spell.getSpell("random");
+      let reply = await getSpell("random");
       await bot.telegram.sendMessage(chatId, reply, { parse_mode: "HTML" });
     }
   }
@@ -66,9 +67,4 @@ export const raccontoDiMartaBroadcast = async (bot) => {
   } catch (e) {
     console.log(e);
   }
-};
-
-module.exports = {
-  randomSpellBroadcast,
-  raccontoDiMartaBroadcast,
 };
