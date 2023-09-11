@@ -153,22 +153,22 @@ bot.command("unsub", async (ctx) => {
 
 bot.action("marta@subscribe", async (ctx) => {
   await setInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
-  return ctx.reply("Sottoscrizione effettuata");
+  return ctx.reply("Sottoscrizione Marta effettuata");
 });
 
 bot.action("randomSpell@subscribe", async (ctx) => {
   await setInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
-  return ctx.reply("Sottoscrizione effettuata");
+  return ctx.reply("Sottoscrizione RandomSpell effettuata");
 });
 
 bot.action("marta@unsubscribe", async (ctx) => {
   await removeInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
-  return ctx.reply("Sottoscrizione rimossa");
+  return ctx.reply("Sottoscrizione Marta rimossa");
 });
 
 bot.action("randomSpell@unsubscribe", async (ctx) => {
   await removeInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
-  return ctx.reply("Sottoscrizione rimossa");
+  return ctx.reply("Sottoscrizione RandomSpell rimossa");
 });
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
@@ -182,7 +182,6 @@ cron.schedule("0 10 * * *", async () => {
 });
 
 cron.schedule("00 16 * * *", async () => {
-  console.log("sono nel chron di Marta");
   console.log("sono nel chron di Marta");
   try {
     await raccontoDiMartaBroadcast(bot);
