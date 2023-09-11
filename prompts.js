@@ -124,7 +124,7 @@ const generateArrayOf = async (narrationElement, lore) => {
   let textArray = [];
   while (!stringBetweenHashes || textArray.length < 4) {
     const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #`;
-    let messageWithArray = generalPrompt(
+    let messageWithArray = await generalPrompt(
       { text: promptText, temperature: 0.7 },
       Prompts.EpisodePromptValues
     );

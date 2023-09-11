@@ -37,7 +37,7 @@ export const randomSpellBroadcast = async (bot) => {
 };
 
 export const raccontoDiMartaBroadcast = async (bot) => {
-  const USERS_CACHE = await getBroadcastSubs(MARTA_SUBS);
+  const USERS_CACHE = (await getBroadcastSubs(MARTA_SUBS)) || [];
   let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
   try {
     if (!MARTA_EPISODE_PROMPT) {
