@@ -25,6 +25,7 @@ import {
   randomSpellBroadcast,
 } from "./broadcasts.js";
 import { generateEpisodeFormat } from "./prompts.js";
+import { fileUploadScene } from "./scenes/fileUploadScene.js";
 
 dotenv.config();
 
@@ -36,7 +37,7 @@ if (token === undefined) {
 const bot = new Telegraf(token);
 bot.use(session({ defaultSession: () => ({}) }));
 
-const stage = new Stage([characterScene]);
+const stage = new Stage([characterScene, fileUploadScene]);
 
 bot.command("randomchar", async (ctx) => {
   await ctx.persistentChatAction("typing", async () => {
@@ -176,6 +177,8 @@ bot.action("randomSpell@unsubscribe", async (ctx) => {
 bot.use(stage.middleware());
 
 bot.command("createCharacter", Stage.enter("characterScene"));
+
+bot.command("sonogiosy", Stage.enter("fileUploadScene"));
 
 cron.schedule("0 10 * * *", async () => {
   await randomSpellBroadcast(bot);
