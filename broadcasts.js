@@ -16,8 +16,9 @@ export const randomSpellBroadcast = async (bot) => {
   const USERS_CACHE = await getBroadcastSubs(SPELLS_SUBS);
   if (USERS_CACHE?.value?.length) {
     let battuta = await generalPrompt(
-      { text: richiesta, temperature: 0.7 },
-      Prompts.BattuteDnD
+      { text: richiesta, temperature: 1 },
+      Prompts.BattuteDnD,
+      ""
     );
     if (!battuta) {
       battuta = "Oh no! Qualcosa non ha funzionato!";
