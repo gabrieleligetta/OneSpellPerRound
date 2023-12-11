@@ -180,6 +180,10 @@ bot.command("createCharacter", Stage.enter("characterScene"));
 
 bot.command("sonogiosy", Stage.enter("fileUploadScene"));
 
+bot.command("beSilly", async (ctx) => {
+  await randomSpellBroadcast(bot);
+});
+
 cron.schedule("0 10 * * *", async () => {
   await randomSpellBroadcast(bot);
 });
