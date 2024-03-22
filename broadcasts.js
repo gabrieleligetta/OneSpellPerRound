@@ -18,7 +18,7 @@ export const randomSpellBroadcast = async (bot) => {
     let battuta = await generalPrompt(
       { text: richiesta, temperature: 1 },
       Prompts.BattuteDnD,
-      "gpt-4-1106-preview"
+      "gpt-4"
     );
     if (!battuta) {
       battuta = "Oh no! Qualcosa non ha funzionato!";

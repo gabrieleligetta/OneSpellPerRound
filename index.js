@@ -102,8 +102,8 @@ bot.action("startMartaAdventure", async (ctx) => {
 
 bot.action("rollDice", async (ctx) => {
   const uniqueActionArray = getUniqueActionArray();
-  const uniqueAction = ctx.session[ctx.chat.id].uniqueAction;
-  if (!!uniqueAction && uniqueActionArray.includes(uniqueAction)) {
+  const uniqueAction = ctx.session?.[ctx.chat.id]?.uniqueAction;
+  if (!!uniqueAction && uniqueActionArray?.includes(uniqueAction)) {
     removeInUniqueActionArray(uniqueAction);
     const diceRoll = abstractDice(1, 20);
     await ctx.reply("Hai Rollato: " + diceRoll);
