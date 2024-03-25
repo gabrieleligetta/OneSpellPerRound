@@ -3,3 +3,7 @@ randomspell - roll random spell
 randomchar - roll standard stats char
 randomrolledchar - roll random stats char
 randombestchar - roll best stats char
+enterDungeon - start an Adventure!
+sub - subscribe to our daily broadcasts!
+unsub - unsubscribe from our daily broadcasts!
+createCharacter - create a character for the adventure
