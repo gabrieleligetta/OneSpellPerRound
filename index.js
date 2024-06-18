@@ -116,7 +116,7 @@ bot.action("rollDice", async (ctx) => {
       const reply = await promptForMarta(
         prompt,
         1,
-        "gpt-3.5-turbo",
+        "gpt-4o",
         ctx.session[ctx.chat.id].dungeonData,
         ctx.chat.id
       );

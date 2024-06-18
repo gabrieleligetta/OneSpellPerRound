@@ -6,7 +6,7 @@ const martaMessages = new Map();
 export async function generalPrompt(
   richiesta,
   type = null,
-  model = "gpt-3.5-turbo"
+  model = "gpt-4o"
 ) {
   if (!richiesta.text) {
     richiesta.text =
@@ -61,7 +61,7 @@ export async function generalPrompt(
 export async function promptForMarta(
   request,
   temperature = 1,
-  model = "gpt-3.5-turbo",
+  model = "gpt-4o",
   isFirstPassage,
   chatId,
   isIncipit = false
