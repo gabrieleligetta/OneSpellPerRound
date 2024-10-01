@@ -1,5 +1,6 @@
 help - show commands
 randomspell - roll random spell
+ask - ask your d&d related question to the bot
 randomchar - roll standard stats char
 randomrolledchar - roll random stats char
 randombestchar - roll best stats char

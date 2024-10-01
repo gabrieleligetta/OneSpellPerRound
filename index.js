@@ -25,6 +25,7 @@ import {
   randomSpellBroadcast,
 } from "./broadcasts.js";
 import { generateEpisodeFormat } from "./prompts.js";
+import { askDnD5eAssistant } from "./openai.js";
 import { fileUploadScene } from "./scenes/fileUploadScene.js";
 
 dotenv.config();
@@ -170,6 +171,26 @@ bot.action("marta@unsubscribe", async (ctx) => {
 bot.action("randomSpell@unsubscribe", async (ctx) => {
   await removeInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
   return ctx.reply("Sottoscrizione RandomSpell rimossa");
+});
+
+bot.command('ask', async (ctx) => {
+  await ctx.persistentChatAction("typing", async () => {
+    // The full text message (e.g., "/ask What is the meaning of life?")
+    const messageText = ctx.message.text;
+
+    // Extract the question part (everything after the command)
+    const question = messageText.replace('/ask', '').trim();
+
+    // Log the question to the console
+    console.log('User question:', question);
+    if (question !== "")  {
+      const reply = await askDnD5eAssistant(question)
+      // Respond back with the same question (optional)
+      await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+    } else {
+      ctx.reply("per favore inserisci una domanda valida");
+    }
+  });
 });
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
