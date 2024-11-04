@@ -22,7 +22,7 @@ export const avventuraInterattivaMartaLaPapera = async (ctx) => {
     reply = await promptForMarta(
       richiesta,
       1,
-      "gpt-4o",
+      process.env.CHATGPT_MODEL,
       ctx.session[ctx.chat.id].dungeonData,
       ctx.chat.id,
       true
@@ -48,7 +48,7 @@ export const avventuraInterattivaMartaLaPapera = async (ctx) => {
     reply = await promptForMarta(
       firstTrial,
       1,
-      "gpt-4o",
+      process.env.CHATGPT_MODEL,
       ctx.session[ctx.chat.id].dungeonData,
       ctx.chat.id
     );
@@ -86,7 +86,7 @@ export const sendFollowUpMessage = async (ctx) => {
       const reply = await promptForMarta(
         secondTrial,
         1,
-        "gpt-4o",
+        process.env.CHATGPT_MODEL,
         ctx.session[ctx.chat.id].dungeonData,
         ctx.chat.id
       );
@@ -120,7 +120,7 @@ export const sendFollowUpMessage = async (ctx) => {
       const reply = await promptForMarta(
         thirdTrial,
         1,
-        "gpt-4o",
+        process.env.CHATGPT_MODEL,
         ctx.session[ctx.chat.id].dungeonData,
         ctx.chat.id
       );
@@ -151,7 +151,7 @@ export const sendFollowUpMessage = async (ctx) => {
       const reply = await promptForMarta(
         finale,
         1,
-        "gpt-4o",
+        process.env.CHATGPT_MODEL,
         ctx.session[ctx.chat.id].dungeonData,
         ctx.chat.id
       );
