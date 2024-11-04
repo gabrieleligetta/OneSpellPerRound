@@ -57,12 +57,11 @@ export const avventuraInterattivaMartaLaPapera = async (ctx) => {
     }
   });
   await ctx.telegram.sendMessage(
-    ctx.chat.id,
-    "Cosa Vuoi Fare?",
-    Markup.inlineKeyboard([
-      Markup.button.callback("Tira Il Dado", "rollDice", false),
-      // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
-    ])
+      ctx.chat.id,
+      "Cosa Vuoi Fare?",
+      Markup.inlineKeyboard([
+        Markup.button.callback("Suggerisci Azione", "suggestAction", false),
+      ])
   );
 };
 
@@ -95,12 +94,11 @@ export const sendFollowUpMessage = async (ctx) => {
       }
     });
     await ctx.telegram.sendMessage(
-      ctx.chat.id,
-      "Cosa Vuoi Fare?",
-      Markup.inlineKeyboard([
-        Markup.button.callback("Tira Il Dado", "rollDice", false),
-        // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
-      ])
+        ctx.chat.id,
+        "Cosa Vuoi Fare?",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Suggerisci Azione", "suggestAction", false),
+        ])
     );
   } else if (ctx.session[ctx.chat.id].dungeonData === 2) {
     ctx.session[ctx.chat.id].dungeonData++;
@@ -129,12 +127,11 @@ export const sendFollowUpMessage = async (ctx) => {
       }
     });
     await ctx.telegram.sendMessage(
-      ctx.chat.id,
-      "Cosa Vuoi Fare?",
-      Markup.inlineKeyboard([
-        Markup.button.callback("Tira Il Dado", "rollDice", false),
-        // Markup.callbackButton("Suggerisci Azione", "ActionPrompt", false),
-      ])
+        ctx.chat.id,
+        "Cosa Vuoi Fare?",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Suggerisci Azione", "suggestAction", false),
+        ])
     );
   } else if (ctx.session[ctx.chat.id].dungeonData === 3) {
     ctx.session[ctx.chat.id].dungeonData++;

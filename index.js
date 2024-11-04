@@ -101,25 +101,47 @@ bot.action("startMartaAdventure", async (ctx) => {
   }
 });
 
+bot.action("suggestAction", async (ctx) => {
+  await ctx.reply("Descrivi l'azione che vuoi intraprendere:");
+  bot.on('text', async (ctx) => {
+    ctx.session[ctx.chat.id] = ctx.session[ctx.chat.id] || {};
+    ctx.session[ctx.chat.id].suggestedAction = ctx.message.text;
+
+    await ctx.reply(
+        "Ora tira il dado per determinare se la tua azione ha successo",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Tira Il Dado", "rollDice", false),
+        ])
+    );
+  });
+});
+
 bot.action("rollDice", async (ctx) => {
   const uniqueActionArray = getUniqueActionArray();
   const uniqueAction = ctx.session?.[ctx.chat.id]?.uniqueAction;
+  const suggestedAction = ctx.session?.[ctx.chat.id]?.suggestedAction;
+
+  if (!suggestedAction) {
+    return ctx.answerCbQuery("Prima suggerisci un'azione!");
+  }
+
   if (!!uniqueAction && uniqueActionArray?.includes(uniqueAction)) {
     removeInUniqueActionArray(uniqueAction);
     const diceRoll = abstractDice(1, 20);
     await ctx.reply("Hai Rollato: " + diceRoll);
     const prompt = generateDiceRollPrompt(
-      diceRoll,
-      ctx.session[ctx.chat.id].trialDifficulty,
-      ctx
+        diceRoll,
+        ctx.session[ctx.chat.id].trialDifficulty,
+        ctx,
+        suggestedAction
     );
     await ctx.persistentChatAction("typing", async () => {
       const reply = await promptForMarta(
-        prompt,
-        1,
-        process.env.CHATGPT_MODEL,
-        ctx.session[ctx.chat.id].dungeonData,
-        ctx.chat.id
+          prompt,
+          1,
+          process.env.CHATGPT_MODEL,
+          ctx.session[ctx.chat.id].dungeonData,
+          ctx.chat.id
       );
       for (const part of chunk(reply, 4096)) {
         await ctx.telegram.sendMessage(ctx.chat.id, part);

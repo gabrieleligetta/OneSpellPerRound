@@ -82,7 +82,7 @@ export async function promptForMarta(
       {
         role: "system",
         content:
-          "è importante NON raccontare di come la prova viene superata, ma solo una descrizione della prova da superare",
+          "è importante raccontare dettagliatamente di come la prova viene superata dai nostri eroi",
       },
     ]);
   }

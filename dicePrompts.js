@@ -1,26 +1,26 @@
-export const generateDiceRollPrompt = (roll, difficulty, ctx) => {
+export const generateDiceRollPrompt = (roll, difficulty, ctx, suggestedAction) => {
   if (!ctx.session[ctx.chat.id]?.overallSuccess) {
     ctx.session[ctx.chat.id]["overallSuccess"] = 0;
   }
   const degree = roll - difficulty;
   if (degree >= 0) {
-    console.log("ctx.session[ctx.chat.id].dungeonData");
-    console.log(ctx.session[ctx.chat.id].dungeonData);
     if (ctx.session[ctx.chat.id].dungeonData === 1) {
       ctx.session[ctx.chat.id].overallSuccess++;
     } else if (ctx.session[ctx.chat.id].dungeonData === 2) {
       ctx.session[ctx.chat.id].overallSuccess =
-        ctx.session[ctx.chat.id].overallSuccess + 2;
+          ctx.session[ctx.chat.id].overallSuccess + 2;
     } else if (ctx.session[ctx.chat.id].dungeonData === 3) {
       ctx.session[ctx.chat.id].overallSuccess =
-        ctx.session[ctx.chat.id].overallSuccess + 4;
+          ctx.session[ctx.chat.id].overallSuccess + 4;
     }
   }
   const pezzoFrase = getAggettivo(roll, difficulty);
   return (
-    "Raccontami nel dettaglio di come" +
-    pezzoFrase +
-    ", impersonando il game Master, utilizza al massimo 150 parole"
+      "Raccontami nel dettaglio di come " +
+      pezzoFrase +
+      " mentre tentavi di " +
+      suggestedAction +
+      ", impersonando il game Master, utilizza al massimo 150 parole"
   );
 };
 
@@ -31,7 +31,7 @@ const getAggettivo = (roll, difficulty) => {
   } else if (roll === 1) {
     return "la prova è stata un fallimento totale critico, con feriti, danni all'ambiente e equipaggiamento danneggiato, a causa delle scarse abilità di chi ha effettuato la prova";
   } else if (degree === "barely_positive") {
-    return "la prova è stata superata di un soffio,con molta fatica grazie a un evento inaspettato o un colpo di fortuna";
+    return "la prova è stata superata di un soffio, con molta fatica grazie a un evento inaspettato o un colpo di fortuna";
   } else if (degree === "positive") {
     return "la prova è stata superata, con una buona dose di impegno grazie alle abilità di chi ha effettuato la prova";
   } else if (degree === "extremely_positive") {
@@ -53,11 +53,11 @@ const getDegree = (roll, difficulty) => {
     return "positive";
   } else if (degree >= 10) {
     return "extremely_positive";
-  } else if (degree < 0 && degree < -5) {
+  } else if (degree < 0 && degree >= -5) {
     return "barely_negative";
-  } else if (degree <= -5 && degree < -10) {
+  } else if (degree < -5 && degree >= -10) {
     return "negative";
-  } else if (degree <= -10) {
+  } else if (degree < -10) {
     return "extremely_negative";
   }
 };
