@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
 
 const openai = new OpenAI({
     apiKey: process.env.CHATGPT_API_KEY,
@@ -91,3 +93,43 @@ async function replaceAnnotationsWithFileNames(text, annotations) {
 
     return text; // Restituisce il testo modificato
 }
+
+const ArrayObject = z.object({
+    values: z.array(z.string()),
+});
+
+export const generateArrayOf = async (narrationElement, lore) => {
+        // Define the system message to set the assistant's behavior
+        const systemMessage = {
+            role: "system",
+            content: "You are an expert in generating narrative elements based on provided lore.",
+        };
+
+        // Construct the user prompt
+        const userPrompt = `Conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali come un array di stringhe in formato JSON con la struttura { "array": ["", "", ...] } senza altro testo.`;
+
+        const userMessage = {
+            role: "user",
+            content: userPrompt,
+        };
+
+        // Make the API call to OpenAI
+        const response = await openai.beta.chat.completions.parse({
+            model: "gpt-4o-mini", // Replace with your desired model
+            messages: [systemMessage, userMessage],
+            temperature: 0.7,
+            response_format: zodResponseFormat(ArrayObject, "array"),
+        });
+
+        const array = response.choices[0].message.parsed;
+        // Validate the parsed response structure
+        if (
+            !!array.values &&
+            Array.isArray(array.values) &&
+            array.values.length >= 4
+        ) {
+            return array.values;
+        } else {
+            return generateArrayOf(narrationElement, lore);
+        }
+};

@@ -9,6 +9,7 @@ import {
 
 import { generalPrompt } from "./chatgpt.js";
 import { setMartaEpisodePrompt } from "./cache.js";
+import {generateArrayOf} from "./openai.js";
 
 export const generateIntroducktion = (MARTA_EPISODE_PROMPT) => {
   let prompt =
@@ -117,37 +118,6 @@ export const generateEpisodeFormat = async () => {
   };
   setMartaEpisodePrompt(episode);
   return episode;
-};
-
-const generateArrayOf = async (narrationElement, lore) => {
-  let stringBetweenHashes = null;
-  let textArray = [];
-  while (!stringBetweenHashes || textArray.length < 4) {
-    const promptText = `conosci 10 ${narrationElement} di massimo 6 parole selezionato dal mondo ${lore}? Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #`;
-    let messageWithArray = await generalPrompt(
-      { text: promptText, temperature: 0.7 },
-      Prompts.EpisodePromptValues
-    );
-    const result = messageWithArray.split("#").length - 1;
-    console.log("messageWithArray");
-    console.log(messageWithArray);
-    if (result > 2) {
-      messageWithArray = removeCharExceptFirstAndLast(messageWithArray, "#");
-    }
-    stringBetweenHashes = getStringBetweenHashes(messageWithArray);
-    console.log("stringBetweenHashes");
-    console.log(stringBetweenHashes);
-    if (!!stringBetweenHashes) {
-      textArray = stringBetweenHashes
-        .split(",")
-        .map((element) =>
-          element.replaceAll("[^a-zA-Z0-9]", "").replaceAll(`\n`, "")
-        );
-      console.log("textArray");
-      console.log(textArray);
-    }
-  }
-  return textArray;
 };
 
 const getStringBetweenHashes = (input) =>
