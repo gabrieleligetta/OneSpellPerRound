@@ -1,4 +1,4 @@
-import faker from "faker";
+import { faker } from '@faker-js/faker';
 
 export const Prompts = {
   MartaLaPapera: "MartaLaPapera",
@@ -89,7 +89,7 @@ export const abstractDice = (min, max) => {
 };
 
 export const getRandomName = () => {
-  return faker.name.findName();
+  return faker.person.fullName();
 };
 export const makeUpperCaseAfterCommas = (str) => {
   return str.replace(/,\s*([a-z])/g, function (d, e) {

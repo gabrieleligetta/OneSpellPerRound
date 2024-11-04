@@ -201,7 +201,7 @@ bot.command("createCharacter", Stage.enter("characterScene"));
 
 bot.command("sonogiosy", Stage.enter("fileUploadScene"));
 
-bot.command("beSilly", async (ctx) => {
+bot.command("beSilly", async () => {
   await randomSpellBroadcast(bot);
 });
 
@@ -223,4 +223,4 @@ cron.schedule("0 1 * * *", async () => {
   await generateEpisodeFormat();
 });
 
-bot.launch();
+bot.launch().then(r => console.log(r));
