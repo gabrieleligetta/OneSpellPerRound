@@ -115,7 +115,7 @@ export const generateArrayOf = async (narrationElement, lore) => {
 
         // Make the API call to OpenAI
         const response = await openai.beta.chat.completions.parse({
-            model: "gpt-4o-mini", // Replace with your desired model
+            model: process.env.CHATGPT_MODEL, // Replace with your desired model
             messages: [systemMessage, userMessage],
             temperature: 0.7,
             response_format: zodResponseFormat(ArrayObject, "array"),
