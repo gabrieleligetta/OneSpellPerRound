@@ -1,19 +1,9 @@
 import { Markup, session, Telegraf } from "telegraf";
 import dotenv from "dotenv";
 import {
-  getUniqueActionArray,
   removeInBroadcastSubs,
-  removeInUniqueActionArray,
   setInBroadcastSubs,
-  setInUniqueActionArray,
 } from "./cache.js";
-import { generateDiceRollPrompt } from "./dicePrompts.js";
-import { abstractDice, chunk } from "./utils.js";
-import {
-  avventuraInterattivaMartaLaPapera,
-  sendFollowUpMessage,
-} from "./avventuraMartaLaPapera.js";
-import { promptForMarta } from "./chatgpt.js";
 import { characterScene } from "./scenes/characterScene.js";
 import { getStandardChar } from "./persona.js";
 import { MARTA_SUBS, SPELLS_SUBS } from "./constants.js";
@@ -27,6 +17,7 @@ import {
 import { generateEpisodeFormat } from "./prompts.js";
 import { askDnD5eAssistant } from "./openai.js";
 import { fileUploadScene } from "./scenes/fileUploadScene.js";
+import { martaAdventureScene } from "./scenes/martaAdventureScene.js";
 
 dotenv.config();
 
@@ -38,38 +29,27 @@ if (token === undefined) {
 const bot = new Telegraf(token);
 bot.use(session({ defaultSession: () => ({}) }));
 
-const stage = new Stage([characterScene, fileUploadScene]);
+const stage = new Stage([characterScene, fileUploadScene, martaAdventureScene]);
+bot.use(stage.middleware());
 
-bot.command("randomchar", async (ctx) => {
+// Helper function for character generation
+const sendCharacter = async (ctx, type) => {
   await ctx.persistentChatAction("typing", async () => {
-    let msg = ctx.message.text;
-    let charLevel = 1;
-    let reply = await getStandardChar(msg, charLevel, "standard");
+    const msg = ctx.message.text;
+    const charLevel = 1;
+    const reply = await getStandardChar(msg, charLevel, type);
     await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
   });
-});
+};
 
-bot.command("randomrolledchar", async (ctx) => {
-  await ctx.persistentChatAction("typing", async () => {
-    let msg = ctx.message.text;
-    let charLevel = 1;
-    let reply = await getStandardChar(msg, charLevel, "rolled");
-    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
-  });
-});
-
-bot.command("randombestchar", async (ctx) => {
-  await ctx.persistentChatAction("typing", async () => {
-    let msg = ctx.message.text;
-    let charLevel = 1;
-    let reply = await getStandardChar(msg, charLevel, "best");
-    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
-  });
-});
+// Refactored character commands
+bot.command("randomchar", (ctx) => sendCharacter(ctx, "standard"));
+bot.command("randomrolledchar", (ctx) => sendCharacter(ctx, "rolled"));
+bot.command("randombestchar", (ctx) => sendCharacter(ctx, "best"));
 
 bot.command("randomspell", async (ctx) => {
   await ctx.persistentChatAction("typing", async () => {
-    let reply = await getSpell("random");
+    const reply = await getSpell("random");
     await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
   });
 });
@@ -79,78 +59,18 @@ bot.command("enterDungeon", async (ctx) => {
   await bot.telegram.sendPhoto(ctx.chat.id, {
     source: "./imgs/witch2.jpeg",
   });
-  setInUniqueActionArray(ctx.chat.id);
   await bot.telegram.sendMessage(
     ctx.chat.id,
     "Avviare una nuova avventura di Marta la papera col cappello da strega?",
     Markup.inlineKeyboard([
-      Markup.button.callback("Tira Il Dado!", "startMartaAdventure", false),
+      Markup.button.callback("Tira Il Dado!", "startMartaAdventure"),
     ])
   );
 });
 
 bot.action("startMartaAdventure", async (ctx) => {
-  console.log("ctx.session--startMartaAdventure");
-  console.log(ctx.session);
-  const uniqueActionArray = getUniqueActionArray();
-  if (uniqueActionArray.includes(ctx.chat.id)) {
-    removeInUniqueActionArray(ctx.chat.id);
-    await avventuraInterattivaMartaLaPapera(ctx);
-  } else {
-    return ctx.answerCbQuery("Non è più possibile avviare l'avventura");
-  }
-});
-
-bot.action("suggestAction", async (ctx) => {
-  await ctx.reply("Descrivi l'azione che vuoi intraprendere:");
-  bot.on('text', async (ctx) => {
-    ctx.session[ctx.chat.id] = ctx.session[ctx.chat.id] || {};
-    ctx.session[ctx.chat.id].suggestedAction = ctx.message.text;
-
-    await ctx.reply(
-        "Ora tira il dado per determinare se la tua azione ha successo",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Tira Il Dado", "rollDice", false),
-        ])
-    );
-  });
-});
-
-bot.action("rollDice", async (ctx) => {
-  const uniqueActionArray = getUniqueActionArray();
-  const uniqueAction = ctx.session?.[ctx.chat.id]?.uniqueAction;
-  const suggestedAction = ctx.session?.[ctx.chat.id]?.suggestedAction;
-
-  if (!suggestedAction) {
-    return ctx.answerCbQuery("Prima suggerisci un'azione!");
-  }
-
-  if (!!uniqueAction && uniqueActionArray?.includes(uniqueAction)) {
-    removeInUniqueActionArray(uniqueAction);
-    const diceRoll = abstractDice(1, 20);
-    await ctx.reply("Hai Rollato: " + diceRoll);
-    const prompt = generateDiceRollPrompt(
-        diceRoll,
-        ctx.session[ctx.chat.id].trialDifficulty,
-        ctx,
-        suggestedAction
-    );
-    await ctx.persistentChatAction("typing", async () => {
-      const reply = await promptForMarta(
-          prompt,
-          1,
-          process.env.CHATGPT_MODEL,
-          ctx.session[ctx.chat.id].dungeonData,
-          ctx.chat.id
-      );
-      for (const part of chunk(reply, 4096)) {
-        await ctx.telegram.sendMessage(ctx.chat.id, part);
-      }
-    });
-    await sendFollowUpMessage(ctx);
-  } else {
-    return ctx.answerCbQuery("You already rolled the dice!");
-  }
+  await ctx.answerCbQuery("L'avventura sta per iniziare!");
+  return ctx.scene.enter("martaAdventureScene");
 });
 
 bot.command("sub", async (ctx) => {
@@ -158,8 +78,8 @@ bot.command("sub", async (ctx) => {
     ctx.chat.id,
     "A quale broadcast vuoi iscriverti?",
     Markup.inlineKeyboard([
-      Markup.button.callback("Marta", "marta@subscribe", false),
-      Markup.button.callback("RandomSpell", "randomSpell@subscribe", false),
+      Markup.button.callback("Marta", "marta@subscribe"),
+      Markup.button.callback("RandomSpell", "randomSpell@subscribe"),
     ])
   );
 });
@@ -169,8 +89,8 @@ bot.command("unsub", async (ctx) => {
     ctx.chat.id,
     "Da quale broadcast vuoi uscire?",
     Markup.inlineKeyboard([
-      Markup.button.callback("Marta", "marta@unsubscribe", false),
-      Markup.button.callback("RandomSpell", "randomSpell@unsubscribe", false),
+      Markup.button.callback("Marta", "marta@unsubscribe"),
+      Markup.button.callback("RandomSpell", "randomSpell@unsubscribe"),
     ])
   );
 });
@@ -197,17 +117,11 @@ bot.action("randomSpell@unsubscribe", async (ctx) => {
 
 bot.command('ask', async (ctx) => {
   await ctx.persistentChatAction("typing", async () => {
-    // The full text message (e.g., "/ask What is the meaning of life?")
     const messageText = ctx.message.text;
-
-    // Extract the question part (everything after the command)
     const question = messageText.replace('/ask', '').trim();
-
-    // Log the question to the console
     console.log('User question:', question);
     if (question !== "")  {
       const reply = await askDnD5eAssistant(question)
-      // Respond back with the same question (optional)
       await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
     } else {
       ctx.reply("per favore inserisci una domanda valida");
@@ -217,10 +131,7 @@ bot.command('ask', async (ctx) => {
 
 //SETTINGS SECTION OF THE BOT INDEX, CRONS AND HELP FUNCTIONS
 
-bot.use(stage.middleware());
-
 bot.command("createCharacter", Stage.enter("characterScene"));
-
 bot.command("sonogiosy", Stage.enter("fileUploadScene"));
 
 bot.command("beSilly", async () => {
@@ -245,4 +156,12 @@ cron.schedule("0 1 * * *", async () => {
   await generateEpisodeFormat();
 });
 
-bot.launch().then(r => console.log(r));
+// Global error handler
+bot.catch((err, ctx) => {
+  console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
+  ctx.reply("Si è verificato un errore, per favore riprova più tardi.").catch(e => {
+    console.error("Failed to send error message to user", e);
+  });
+});
+
+bot.launch().then(r => console.log("Bot launched"));

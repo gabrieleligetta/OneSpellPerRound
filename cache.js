@@ -10,42 +10,8 @@ let skillsGlobal;
 let spellsGlobal;
 let racesGlobal;
 let traitsGlobalArray = [];
-let uniqueActionArray = [];
-// let MARTA_SUBS = [481189001, -1001845883499, 6482260157];
-// let SPELLS_SUBS = [481189001, -1001845883499, 6482260157];
 let MARTA_EPISODE_PROMPT = null;
-// let MARTA_EPISODE_PROMPT = {
-//   episodeFormat: "autoconclusivo",
-//   enemy: " Dragonne",
-//   boss: " Tiamat",
-//   supportCharacters: ["Leo il lupo coraggioso", "Lucia la gatta ballerina"],
-//   events: [
-//     "Incendio distrugge mercato nel Villaggio delle Streghe",
-//     " Invasione di draghi nel Villaggio delle Streghe",
-//     " Crollo di una torre a causa di una dragone nel Villaggio delle Streghe",
-//     " Fuga di massa a causa di un attacco di dragone nel Villaggio delle Streghe",
-//     " Distruzione di una casa a causa di un dragone nel Villaggio delle Streghe",
-//     " Panico generale causato da un dragone nel Villaggio delle Streghe",
-//     " Attacco di dragone al castello nel Villaggio delle Streghe",
-//     " Danni alle coltivazioni a causa di un dragone nel Villaggio delle Streghe",
-//     " Feriti a seguito di un attacco di dragone nel Villaggio delle Streghe",
-//     " ",
-//   ],
-//   startPlace: " Villaggio delle Streghe",
-//   enemyPlace: " Aokigahara Forest",
-//   trialsOfHeroes: [
-//     "Caduta da altezza",
-//     " combattimento con spade",
-//     " furia distruttiva",
-//     " abilità di volo",
-//     " controllo del fuoco",
-//     " teletrasporto",
-//     " manipolazione mentale",
-//     " invisibilità",
-//     " guarigione istantanea",
-//     " controllo elementale",
-//   ],
-// };
+
 //Global Variables caching system
 
 export const getMartaEpisodePrompt = () => {
@@ -90,19 +56,6 @@ export const removeInBroadcastSubs = async (BroadcastType, user) => {
   }
 };
 
-export const getUniqueActionArray = () => {
-  return uniqueActionArray;
-};
-
-export const setInUniqueActionArray = (item) => {
-  uniqueActionArray.push(item);
-  return uniqueActionArray;
-};
-
-export const removeInUniqueActionArray = (item) => {
-  uniqueActionArray = uniqueActionArray.filter((e) => e !== item);
-  return uniqueActionArray;
-};
 export const getAbilityScores = async () => {
   if (scoresGlobal) {
     return scoresGlobal;
