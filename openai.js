@@ -117,7 +117,7 @@ export const generateArrayOf = async (narrationElement, lore) => {
         const response = await openai.beta.chat.completions.parse({
             model: process.env.CHATGPT_MODEL, // Replace with your desired model
             messages: [systemMessage, userMessage],
-            temperature: 0.7,
+            temperature: 1,
             response_format: zodResponseFormat(ArrayObject, "array"),
         });
 
