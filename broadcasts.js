@@ -2,7 +2,6 @@ import { generalPrompt } from "./chatgpt.js";
 import {
   getBroadcastSubs,
   getMartaEpisodePrompt,
-  setInUniqueActionArray,
 } from "./cache.js";
 import { MARTA_SUBS, SPELLS_SUBS } from "./constants.js";
 import { Markup } from "telegraf";
@@ -51,7 +50,8 @@ export const raccontoDiMartaBroadcast = async (bot) => {
         await bot.telegram.sendPhoto(chatId, {
           source: "./imgs/witch2.jpeg",
         });
-        setInUniqueActionArray(chatId);
+        // La riga seguente è stata rimossa perché obsoleta
+        // setInUniqueActionArray(chatId); 
         await bot.telegram.sendMessage(
           chatId,
           "Avviare una nuova avventura di Marta la papera col cappello da strega?",
