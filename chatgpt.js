@@ -1,8 +1,8 @@
 import { Prompts } from "./utils.js";
 import axios from "axios";
 
-const martaMessages = new Map();
-
+// RIMOZIONE della mappa globale in-memoria
+// const martaMessages = new Map();
 
 export async function generalPrompt(
   richiesta,
@@ -53,9 +53,7 @@ export async function generalPrompt(
     );
     return response.data.choices[0].message.content;
   } catch (e) {
-    console.log(e.response.status);
-    console.log(e.response.statusText);
-    console.log(e.response.data.error);
+    console.error("Errore in generalPrompt:", e.response ? e.response.data : e.message);
   }
 }
 
@@ -63,42 +61,30 @@ export async function promptForMarta(
   request,
   temperature = 1,
   model = process.env.CHATGPT_MODEL,
-  isFirstPassage,
-  chatId,
-  isIncipit = false
+  messageHistory, // La cronologia viene passata come parametro
+  isSystemMessage = false // Flag per aggiungere messaggi di sistema speciali
 ) {
-  if (isFirstPassage === 0 && isIncipit) {
-    martaMessages.set(chatId, [
-      {
-        role: "system",
-        content:
-          "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un'atmosfera fantasy.",
-      },
-    ]);
+  let currentHistory = [...messageHistory]; // Crea una copia per evitare mutazioni
+
+  if (isSystemMessage) {
+    currentHistory.push({
+      role: "system",
+      content: "è importante raccontare dettagliatamente di come la prova viene superata dai nostri eroi",
+    });
   }
-  if (isFirstPassage !== 4 && !isIncipit) {
-    martaMessages.set(chatId, [
-      ...martaMessages.get(chatId),
-      {
-        role: "system",
-        content:
-          "è importante raccontare dettagliatamente di come la prova viene superata dai nostri eroi",
-      },
-    ]);
-  }
-  martaMessages.set(chatId, [
-    ...martaMessages.get(chatId),
-    {
-      role: "user",
-      content: request,
-    },
-  ]);
+
+  currentHistory.push({
+    role: "user",
+    content: request,
+  });
+
   const apiKey = process.env.CHATGPT_API_KEY;
   const data = {
     model: model,
-    messages: martaMessages.get(chatId),
+    messages: currentHistory,
     temperature: temperature || 1,
   };
+
   try {
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
@@ -111,20 +97,24 @@ export async function promptForMarta(
       }
     );
     const botResponse = response.data.choices[0].message.content;
-    martaMessages.set(chatId, [
-      ...martaMessages.get(chatId),
-      {
-        role: "assistant",
-        content: botResponse,
-      },
-    ]);
-    if (isFirstPassage === 4 && !isIncipit) {
-      martaMessages.set(chatId, []);
-    }
-    return botResponse;
+    
+    // Aggiunge la risposta del bot alla cronologia
+    currentHistory.push({
+      role: "assistant",
+      content: botResponse,
+    });
+
+    // Restituisce sia la risposta che la cronologia aggiornata
+    return {
+      reply: botResponse,
+      updatedHistory: currentHistory,
+    };
   } catch (e) {
-    console.log(e.response.status);
-    console.log(e.response.statusText);
-    console.log(e.response.data.error);
+    console.error("Errore in promptForMarta:", e.response ? e.response.data.error : e.message);
+    // In caso di errore, restituisce la cronologia originale per non perdere i dati
+    return {
+      reply: "Oh no! Qualcosa è andato storto con la magia...",
+      updatedHistory: messageHistory,
+    };
   }
 }

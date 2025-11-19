@@ -1,6 +1,6 @@
 import { Markup } from "telegraf";
 import { BaseScene } from "telegraf/scenes";
-import { getMartaEpisodePrompt } from "../cache.js";
+import { getMartaEpisodePrompt, setMartaEpisodePrompt } from "../cache.js";
 import {
   generateEpisodeFinale,
   generateEpisodeFormat,
@@ -8,168 +8,146 @@ import {
   generateTrial,
 } from "../prompts.js";
 import { promptForMarta } from "../chatgpt.js";
-import { abstractDice, chunk, makeid } from "../utils.js";
+import { abstractDice, chunk } from "../utils.js";
+
+function generateDiceRollPrompt(diceRoll, trialDifficulty, suggestedAction) {
+  return `L'utente ha suggerito di '${suggestedAction}' e ha ottenuto ${diceRoll} su un tiro con difficoltà ${trialDifficulty}. Descrivi cosa succede.`;
+}
 
 export const martaAdventureScene = new BaseScene("martaAdventureScene");
 
-// 1. Ingresso nella scena
+// --- GESTORI DI COMANDI INTERNI ALLA SCENA ---
+martaAdventureScene.command("resetAdventure", async (ctx) => {
+  console.log("[Marta Scene] Ricevuto comando /reset_adventure. Uscita forzata.");
+  await ctx.reply("La tua avventura è stata resettata.");
+  ctx.session.adventureLock = false;
+  return ctx.scene.leave();
+});
+
+martaAdventureScene.command(["enterDungeon", "start", "help"], async (ctx) => {
+  console.log(`[Marta Scene] Ricevuto comando '${ctx.message.text}' durante l'avventura.`);
+  await ctx.reply("Sei già nel mezzo di un'avventura! Descrivi la tua prossima azione oppure usa il comando /reset_adventure per terminarla e ricominciare.");
+});
+
+// --- FLUSSO PRINCIPALE DELLA SCENA ---
+
+// 1. Ingresso nella scena: Invia solo l'introduzione.
 martaAdventureScene.enter(async (ctx) => {
-  // Inizializza lo stato della scena
-  ctx.scene.session.dungeonData = 0;
-  ctx.scene.session.overallSuccess = 0;
+  console.log("[Marta Scene] Entrato nella scena.");
+  try {
+    ctx.scene.session.dungeonData = 0;
+    ctx.scene.session.overallSuccess = 0;
+    ctx.scene.session.messageHistory = [{
+        role: "system",
+        content: "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un'atmosfera fantasy.",
+    }];
 
-  let MARTA_EPISODE_PROMPT = getMartaEpisodePrompt();
-  if (!MARTA_EPISODE_PROMPT) {
-    MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
-  }
-  ctx.scene.session.MARTA_EPISODE_PROMPT = MARTA_EPISODE_PROMPT;
+    console.log("[Marta Scene] Caricamento episodio...");
+    let MARTA_EPISODE_PROMPT = await getMartaEpisodePrompt();
+    if (!MARTA_EPISODE_PROMPT) {
+      console.warn("[Marta Scene] Nessun episodio pre-generato trovato. Lo genero al volo.");
+      MARTA_EPISODE_PROMPT = await generateEpisodeFormat();
+      await setMartaEpisodePrompt(MARTA_EPISODE_PROMPT);
+    }
+    ctx.scene.session.MARTA_EPISODE_PROMPT = MARTA_EPISODE_PROMPT;
+    console.log("[Marta Scene] Episodio caricato.");
 
-  const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
+    const richiesta = generateIntroducktion(MARTA_EPISODE_PROMPT);
 
-  await ctx.reply("Inizia l'avventura di Marta!");
-  await ctx.persistentChatAction("typing", async () => {
-    const reply = await promptForMarta(
-      richiesta,
-      1,
-      process.env.CHATGPT_MODEL,
-      ctx.scene.session.dungeonData,
-      ctx.chat.id,
-      true
+    const { reply, updatedHistory } = await promptForMarta(
+      richiesta, 1, process.env.CHATGPT_MODEL, ctx.scene.session.messageHistory
     );
+    ctx.scene.session.messageHistory = updatedHistory;
     for (const part of chunk(reply, 4096)) {
       await ctx.telegram.sendMessage(ctx.chat.id, part);
     }
-  });
+    
+    // Dopo l'intro, chiedi subito la prima azione.
+    await ctx.reply("Cosa vuoi fare? Descrivi la tua azione.");
 
-  // Passa alla prima prova
-  return ctx.scene.enter("martaAdventureScene", { step: "trial" });
+  } catch (error) {
+    console.error("[Marta Scene] Errore critico all'ingresso nella scena:", error);
+    ctx.session.adventureLock = false;
+    await ctx.reply("C'è stato un problema nella creazione dell'avventura. Riprova.");
+    return ctx.scene.leave();
+  }
 });
 
-// Gestore centralizzato per le prove
+// 2. Gestore per l'input di testo
 martaAdventureScene.on("text", async (ctx) => {
-  // Questo gestore cattura l'azione suggerita dall'utente
-  const suggestedAction = ctx.message.text;
-  ctx.scene.session.suggestedAction = suggestedAction;
-
+  ctx.scene.session.suggestedAction = ctx.message.text;
   await ctx.reply(
-    "Ottima idea! Ora tira il dado per vedere se la tua azione ha successo.",
+    "Ottima idea! Ora tira il dado per determinare il successo della tua azione.",
     Markup.inlineKeyboard([
       Markup.button.callback("Tira Il Dado!", "rollDiceInScene"),
     ])
   );
 });
 
+// 3. Gestore per il tiro di dado - IL CERVELLO DELLA SCENA
 martaAdventureScene.action("rollDiceInScene", async (ctx) => {
   await ctx.answerCbQuery("Hai tirato il dado!");
+  
   const suggestedAction = ctx.scene.session.suggestedAction;
+  if (!suggestedAction) return ctx.reply("Dovresti prima suggerire un'azione!");
 
-  if (!suggestedAction) {
-    return ctx.reply("Dovresti prima suggerire un'azione!");
-  }
+  // --- LOGICA DI AVANZAMENTO E CALCOLO DIFFICOLTÀ ---
+  const currentTrial = (ctx.scene.session.dungeonData || 0) + 1;
+  ctx.scene.session.dungeonData = currentTrial;
+  console.log(`[Marta Scene] Esecuzione prova numero: ${currentTrial}`);
+
+  const difficultyMap = { 1: 5, 2: 11, 3: 11 };
+  const baseDifficulty = abstractDice(currentTrial === 1 ? 0 : (currentTrial === 2 ? 5 : 8), difficultyMap[currentTrial]);
+  const trialDifficulty = baseDifficulty + currentTrial;
+  console.log(`[Marta Scene] Difficoltà calcolata: ${trialDifficulty}`);
+  // ----------------------------------------------------
 
   const diceRoll = abstractDice(1, 20);
   await ctx.reply(`Hai rollato: ${diceRoll}`);
+  
+  console.log(`[Marta Scene] CONFRONTO: Tiro: ${diceRoll}, Difficoltà: ${trialDifficulty}`);
+  const isSuccess = parseInt(diceRoll, 10) >= parseInt(trialDifficulty, 10);
+  
+  if (isSuccess) ctx.scene.session.overallSuccess++;
+  console.log(`[Marta Scene] Prova ${isSuccess ? "superata" : "fallita"}. Successi totali: ${ctx.scene.session.overallSuccess}`);
 
-  const trialDifficulty = ctx.scene.session.trialDifficulty;
-  const isSuccess = diceRoll >= trialDifficulty;
-  if (isSuccess) {
-    ctx.scene.session.overallSuccess++;
-  }
-
-  const prompt = generateDiceRollPrompt(
-    diceRoll,
-    trialDifficulty,
-    ctx, // Potrebbe essere necessario adattare cosa viene passato qui
-    suggestedAction
+  const resultPrompt = generateDiceRollPrompt(diceRoll, trialDifficulty, suggestedAction);
+  const resultResponse = await promptForMarta(
+    resultPrompt, 1, process.env.CHATGPT_MODEL, ctx.scene.session.messageHistory, true
   );
-
-  await ctx.persistentChatAction("typing", async () => {
-    const reply = await promptForMarta(
-      prompt,
-      1,
-      process.env.CHATGPT_MODEL,
-      ctx.scene.session.dungeonData,
-      ctx.chat.id
+  ctx.scene.session.messageHistory = resultResponse.updatedHistory;
+  for (const part of chunk(resultResponse.reply, 4096)) {
+    await ctx.telegram.sendMessage(ctx.chat.id, part);
+  }
+  
+  // --- PRESENTAZIONE PROVA SUCCESSIVA O FINALE ---
+  if (currentTrial < 3) {
+    const trialNameMap = { 2: "la seconda prova", 3: "la terza e ultima prova" };
+    const trialPrompt = generateTrial(ctx.scene.session.MARTA_EPISODE_PROMPT, trialNameMap[currentTrial + 1], 0, 0); // Placeholder, la difficoltà vera è calcolata sopra
+    
+    const trialResponse = await promptForMarta(
+      trialPrompt, 1, process.env.CHATGPT_MODEL, ctx.scene.session.messageHistory
     );
-    for (const part of chunk(reply, 4096)) {
+    ctx.scene.session.messageHistory = trialResponse.updatedHistory;
+    for (const part of chunk(trialResponse.reply, 4096)) {
       await ctx.telegram.sendMessage(ctx.chat.id, part);
     }
-  });
-  
-  // Logica per passare alla prova successiva o al finale
-  if (ctx.scene.session.dungeonData < 3) {
-     return ctx.scene.enter("martaAdventureScene", { step: "trial" });
+    
+    await ctx.reply("Cosa vuoi fare? Descrivi la tua azione.");
+
   } else {
-     return ctx.scene.enter("martaAdventureScene", { step: "finale" });
+    console.log("[Marta Scene] Passaggio al finale.");
+    const finalePrompt = generateEpisodeFinale(ctx.scene.session.MARTA_EPISODE_PROMPT, ctx.scene.session.overallSuccess);
+    const finaleResponse = await promptForMarta(
+      finalePrompt, 1, process.env.CHATGPT_MODEL, ctx.scene.session.messageHistory
+    );
+    
+    for (const part of chunk(finaleResponse.reply, 4096)) {
+      await ctx.telegram.sendMessage(ctx.chat.id, part);
+    }
+    
+    await ctx.reply("L'avventura di Marta si conclude qui. Grazie per aver giocato!");
+    ctx.session.adventureLock = false;
+    return ctx.scene.leave();
   }
 });
-
-// Logica per gestire i vari step
-martaAdventureScene.use(async (ctx, next) => {
-  if (ctx.scene.state.step === "trial") {
-    ctx.scene.session.dungeonData++;
-    const difficultyMap = { 1: 5, 2: 11, 3: 11 };
-    const trialNameMap = { 1: "la prima prova", 2: "la seconda prova", 3: "la terza e ultima prova" };
-
-    const difficulty = abstractDice(ctx.scene.session.dungeonData === 1 ? 0 : (ctx.scene.session.dungeonData === 2 ? 5 : 8), difficultyMap[ctx.scene.session.dunngeonData]);
-    ctx.scene.session.trialDifficulty = difficulty + ctx.scene.session.dungeonData;
-
-    const trialPrompt = generateTrial(
-      ctx.scene.session.MARTA_EPISODE_PROMPT,
-      trialNameMap[ctx.scene.session.dungeonData],
-      difficulty,
-      ctx.scene.session.dungeonData
-    );
-
-    await ctx.persistentChatAction("typing", async () => {
-      const reply = await promptForMarta(
-        trialPrompt,
-        1,
-        process.env.CHATGPT_MODEL,
-        ctx.scene.session.dungeonData,
-        ctx.chat.id
-      );
-      for (const part of chunk(reply, 4096)) {
-        await ctx.telegram.sendMessage(ctx.chat.id, part);
-      }
-    });
-
-    await ctx.reply(
-      "Cosa vuoi fare? Descrivi la tua azione.",
-    );
-    // La scena ora attenderà l'input di testo dall'utente
-    return;
-  }
-  
-  if (ctx.scene.state.step === "finale") {
-      ctx.scene.session.dungeonData++;
-      const finalePrompt = generateEpisodeFinale(
-        ctx.scene.session.MARTA_EPISODE_PROMPT,
-        ctx.scene.session.overallSuccess
-      );
-
-      await ctx.persistentChatAction("typing", async () => {
-        const reply = await promptForMarta(
-          finalePrompt,
-          1,
-          process.env.CHATGPT_MODEL,
-          ctx.scene.session.dungeonData,
-          ctx.chat.id
-        );
-        for (const part of chunk(reply, 4096)) {
-          await ctx.telegram.sendMessage(ctx.chat.id, part);
-        }
-      });
-      
-      await ctx.reply("L'avventura di Marta si conclude qui. Grazie per aver giocato!");
-      return ctx.scene.leave();
-  }
-
-  return next();
-});
-
-function generateDiceRollPrompt(diceRoll, trialDifficulty, ctx, suggestedAction) {
-    // Implementa la logica per generare il prompt del tiro di dado
-    // Questa è una funzione di placeholder
-    return `L'utente ha suggerito di '${suggestedAction}' e ha ottenuto ${diceRoll} su un tiro con difficoltà ${trialDifficulty}. Descrivi cosa succede.`;
-}

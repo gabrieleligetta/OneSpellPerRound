@@ -3,6 +3,8 @@ import axios from "axios";
 import { getFromCollection, writeToCollection } from "./mongoDB.js";
 
 const userBroadcast = "userBroadcast";
+const gameStateCollection = "game_state";
+const EPISODE_DOC_ID = "current_marta_episode";
 
 let classesGlobal;
 let scoresGlobal;
@@ -10,18 +12,38 @@ let skillsGlobal;
 let spellsGlobal;
 let racesGlobal;
 let traitsGlobalArray = [];
-let MARTA_EPISODE_PROMPT = null;
 
-//Global Variables caching system
+// --- GESTIONE PERSISTENTE EPISODIO DI MARTA ---
 
-export const getMartaEpisodePrompt = () => {
-  return MARTA_EPISODE_PROMPT;
+export const getMartaEpisodePrompt = async () => {
+  const result = await getFromCollection(gameStateCollection, "_id", EPISODE_DOC_ID);
+  // Se esiste un documento, restituisce il suo campo 'episodeData'
+  return result ? result.episodeData : null;
 };
 
-export const setMartaEpisodePrompt = (episode) => {
-  MARTA_EPISODE_PROMPT = episode;
-  return MARTA_EPISODE_PROMPT;
+export const setMartaEpisodePrompt = async (episode) => {
+  const episodeDocument = {
+    _id: EPISODE_DOC_ID,
+    episodeData: episode,
+    updatedAt: new Date(),
+  };
+  // Usa la funzione writeToCollection che gestisce sia l'inserimento che l'aggiornamento
+  await writeToCollection(gameStateCollection, episodeDocument);
+  return episode;
 };
+
+
+// --- VECCHIA GESTIONE IN MEMORIA (RIMOSSA) ---
+// let MARTA_EPISODE_PROMPT = null;
+// export const getMartaEpisodePrompt = () => {
+//   return MARTA_EPISODE_PROMPT;
+// };
+// export const setMartaEpisodePrompt = (episode) => {
+//   MARTA_EPISODE_PROMPT = episode;
+//   return MARTA_EPISODE_PROMPT;
+// };
+
+// ---------------------------------------------
 
 export const getBroadcastSubs = async (BroadcastType) => {
   return await getFromCollection(userBroadcast, "BroadcastType", BroadcastType);
@@ -29,7 +51,7 @@ export const getBroadcastSubs = async (BroadcastType) => {
 
 export const setInBroadcastSubs = async (BroadcastType, user) => {
   let USERS_CACHE = await getBroadcastSubs(BroadcastType);
-  if (!!USERS_CACHE._id) {
+  if (!!USERS_CACHE?._id) {
     USERS_CACHE.value.push(user);
     USERS_CACHE.value = [...new Set(USERS_CACHE.value)];
     await writeToCollection(userBroadcast, USERS_CACHE);
@@ -45,7 +67,7 @@ export const setInBroadcastSubs = async (BroadcastType, user) => {
 
 export const removeInBroadcastSubs = async (BroadcastType, user) => {
   let USERS_CACHE = await getBroadcastSubs(BroadcastType);
-  if (!!USERS_CACHE._id) {
+  if (!!USERS_CACHE?._id) {
     USERS_CACHE.value = USERS_CACHE.value.filter((e) => e !== user);
     await writeToCollection(userBroadcast, USERS_CACHE);
   } else {
