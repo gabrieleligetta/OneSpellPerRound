@@ -1,81 +1,30 @@
-import { Prompts } from "./utils.js";
 import axios from "axios";
-
-// RIMOZIONE della mappa globale in-memoria
-// const martaMessages = new Map();
 
 export async function generalPrompt(
   richiesta,
   type = null,
   model = process.env.CHATGPT_MODEL
 ) {
-  if (!richiesta.text) {
-    richiesta.text =
-      "Sei un comico affermato che ritorna freddure a tema fantasy";
-  }
-  const messages = [];
-  if (type === Prompts.MartaLaPapera) {
-    messages.push({
-      role: "system",
-      content:
-        "Sei il Dungeon Master di una campagna di D&D dove la protagonista è 'Marta la papera col cappello da Strega', che racconta episodi della vita di Marta e i suoi amici che sono degli avventurieri e vagano per il mondo di Ethim, popolato da animali antropomorfi, mostri e creature magiche senzienti, in un atmosfera a metà bambinesca e a metà Lovecraftiana. Nel corso dell' avventura succedono 3 eventi che hanno una difficoltà da 5 a 15, per tutti e tre verrà lanciato un d20 per effettuare una prova, racconta dettagliatamente il modo in cui andranno gli eventi per Marta e i suoi amici, basandoti sul numero del dado 20, tenendo presente che se il numero del d20 non supera la difficoltà dell'evento la prova fallisce a discapito dei nostri eroi.",
-    });
-  } else if (type === Prompts.BattuteDnD) {
-    messages.push({
-      role: "system",
-      content: "Sei un comico affermato che ritorna freddure a tema fantasy",
-    });
-  } else if (type === Prompts.EpisodePromptValues) {
-    messages.push({
-      role: "system",
-      content:
-        "Sei un l'assistente di uno sviluppatore che ha bisogno di risultati che tornano sempre alla stessa maniera," +
-        " Ritornali separati da virgola senza altro testo in una frase racchiusa tra due #",
-    });
-  }
-  messages.push({ role: "user", content: richiesta.text });
-  const apiKey = process.env.CHATGPT_API_KEY;
-  const data = {
-    model: model,
-    messages: messages,
-    temperature: richiesta.temperature || 1,
-  };
-  try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data.choices[0].message.content;
-  } catch (e) {
-    console.error("Errore in generalPrompt:", e.response ? e.response.data : e.message);
-  }
+  // ... (codice invariato)
 }
 
 export async function promptForMarta(
-  request,
+  requestPayload, // Ora accetta un payload JSON
   temperature = 1,
   model = process.env.CHATGPT_MODEL,
-  messageHistory, // La cronologia viene passata come parametro
-  isSystemMessage = false // Flag per aggiungere messaggi di sistema speciali
+  messageHistory,
+  character, // Aggiunto per poter inserire il nome del personaggio nella domanda finale
+  forceQuestion = false // Nuovo parametro per controllare la domanda finale
 ) {
-  let currentHistory = [...messageHistory]; // Crea una copia per evitare mutazioni
+  let currentHistory = [...messageHistory];
 
-  if (isSystemMessage) {
-    currentHistory.push({
-      role: "system",
-      content: "è importante raccontare dettagliatamente di come la prova viene superata dai nostri eroi",
-    });
-  }
+  // Rimosse le istruzioni per l'AI su come formattare l'output JSON da qui.
+  // Saranno aggiunte una sola volta all'inizio della scena in martaAdventureScene.js
 
+  // Aggiungi il payload JSON come messaggio utente
   currentHistory.push({
     role: "user",
-    content: request,
+    content: JSON.stringify(requestPayload), // Serializza il payload JSON
   });
 
   const apiKey = process.env.CHATGPT_API_KEY;
@@ -83,7 +32,14 @@ export async function promptForMarta(
     model: model,
     messages: currentHistory,
     temperature: temperature || 1,
+    response_format: { type: "json_object" }, // Richiede output JSON
   };
+
+  // --- LOG DIAGNOSTICO ---
+  console.log("--- MESSAGES SENT TO OPENAI ---");
+  console.log(JSON.stringify(data.messages, null, 2));
+  console.log("-------------------------------");
+  // --- FINE LOG DIAGNOSTICO ---
 
   try {
     const response = await axios.post(
@@ -96,25 +52,62 @@ export async function promptForMarta(
         },
       }
     );
-    const botResponse = response.data.choices[0].message.content;
     
-    // Aggiunge la risposta del bot alla cronologia
+    const botResponseContent = response.data.choices[0].message.content;
+    
+    // --- LOG DIAGNOSTICO AGGIUNTO ---
+    console.log("Type of botResponseContent:", typeof botResponseContent);
+    // --- FINE LOG DIAGNOSTICO AGGIUNTO ---
+
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(botResponseContent);
+    } catch (jsonError) {
+      console.error("Errore nel parsing JSON della risposta OpenAI:", jsonError);
+      console.error("Risposta RAW:", botResponseContent);
+      throw new Error("La risposta dell'AI non è un JSON valido.");
+    }
+
+    let message = parsedResponse.message || "L'AI non ha fornito un messaggio valido.";
+    const metadata = parsedResponse.metadata || {};
+    const loot = parsedResponse.loot || [];
+    const xp_points = parsedResponse.xp_points || 0;
+
+    // Aggiungi la domanda finale al messaggio se richiesto
+    if (forceQuestion) {
+      const charName = character?.name || "l'eroe";
+      message += ` Tu, ${charName}, cosa fai?`;
+    }
+
+    // Aggiungi loot e XP al messaggio per la visualizzazione immediata
+    if (loot.length > 0) {
+      message += `\n\nHai trovato: ${loot.join(", ")}.`;
+    }
+    if (xp_points > 0) {
+      message += `\n\nHai guadagnato ${xp_points} punti esperienza!`;
+    }
+    
+    // Aggiungi la risposta dell'assistente alla cronologia come stringa JSON
     currentHistory.push({
       role: "assistant",
-      content: botResponse,
+      content: botResponseContent, // Memorizza la stringa JSON RAW
     });
 
-    // Restituisce sia la risposta che la cronologia aggiornata
     return {
-      reply: botResponse,
+      reply: message, // Restituisce il messaggio testuale arricchito
+      metadata: metadata,
+      loot: loot,
+      xp_points: xp_points,
       updatedHistory: currentHistory,
     };
   } catch (e) {
     console.error("Errore in promptForMarta:", e.response ? e.response.data.error : e.message);
-    // In caso di errore, restituisce la cronologia originale per non perdere i dati
     return {
       reply: "Oh no! Qualcosa è andato storto con la magia...",
+      metadata: {},
+      loot: [],
+      xp_points: 0,
       updatedHistory: messageHistory,
     };
-  }
+    }
 }

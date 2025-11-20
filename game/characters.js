@@ -1,4 +1,5 @@
-import { writeToCollection } from "../mongoDB.js";
+import { writeToCollection, getFromCollection } from "../mongoDB.js";
+import { ObjectId } from "mongodb";
 
 const collection = "characters";
 
@@ -14,4 +15,8 @@ export const createCharacter = async (chatId, owner, name) => {
   };
   await writeToCollection(collection, character);
   return character;
+};
+
+export const getCharacter = async (characterId) => {
+  return await getFromCollection(collection, "_id", new ObjectId(characterId));
 };

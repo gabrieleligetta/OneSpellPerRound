@@ -6,25 +6,24 @@ const openai = new OpenAI({
     apiKey: process.env.CHATGPT_API_KEY,
 });
 
-// --- NUOVO SCHEMA ZOD PER L'INTERO EPISODIO ---
+// --- SCHEMA ZOD PER L'EPISODIO BASE (SENZA supportCharacters) ---
 const EpisodeObject = z.object({
     enemy: z.string().describe("Il nome di un gruppo di antagonisti o di un singolo nemico, che funge da tirapiedi o subordinato del boss. Massimo 6 parole."),
     boss: z.string().describe("Il nome del boss finale, una divinità o un'entità di grande potere nel mondo di Dungeons and Dragons. Massimo 6 parole."),
     startPlace: z.string().describe("Un luogo fantasy con un'atmosfera magica dove inizia l'avventura. Massimo 6 parole."),
     enemyPlace: z.string().describe("Il covo o il rifugio del nemico ('enemy'), deve avere un'atmosfera cupa e minacciosa. Massimo 6 parole."),
-    events: z.array(z.string()).min(5).describe("Una lista di 5-7 eventi nefasti o misteriosi. Ogni evento deve essere una frase di massimo 10 parole."),
-    supportCharacters: z.array(z.string()).min(2).max(4).describe("Una lista di 2-4 animaletti del bosco antropomorfi, con nome, soprannome e aggettivo. Esempio: 'Lucia la gatta ballerina'."),
-    trialsOfHeroes: z.array(z.string()).min(5).describe("Una lista di 5-7 sfide eroiche o compiti che gli eroi devono affrontare. Ogni sfida deve essere una frase di massimo 8 parole."),
+    initialEvent: z.string().describe("Una breve descrizione dell'evento iniziale che dà il via all'avventura. Massimo 15 parole."),
+    // supportCharacters rimosso da qui, verrà generato dinamicamente
 });
 
-// --- NUOVA FUNZIONE PER GENERARE L'INTERO EPISODIO IN UNA SOLA CHIAMATA ---
+// --- FUNZIONE PER GENERARE L'EPISODIO BASE ---
 export const generateCompleteEpisode = async () => {
     const systemMessage = {
         role: "system",
-        content: "Sei un Dungeon Master esperto per una campagna di Dungeons and Dragons. Il tuo compito è generare la struttura completa di un'avventura autoconclusiva in un singolo oggetto JSON, seguendo scrupolosamente lo schema fornito. Assicurati che gli elementi siano coerenti tra loro: l'enemy deve essere un subordinato del boss, e gli events e le trialsOfHeroes devono essere tematicamente legati all'enemy e ai luoghi."
+        content: "Sei un Dungeon Master esperto per una campagna di Dungeons and Dragons. Il tuo compito è generare la struttura base di un'avventura autoconclusiva in un singolo oggetto JSON, seguendo scrupolosamente lo schema fornito. Assicurati che gli elementi siano coerenti tra loro: l'enemy deve essere un subordinato del boss."
     };
 
-    const userPrompt = "Genera una nuova struttura per un'avventura per 'Marta la papera col cappello da strega'. Popola tutti i campi richiesti dallo schema JSON.";
+    const userPrompt = "Genera una nuova struttura base per un'avventura per 'Marta la papera col cappello da strega'. Popola tutti i campi richiesti dallo schema JSON.";
 
     const userMessage = {
         role: "user",
@@ -35,21 +34,18 @@ export const generateCompleteEpisode = async () => {
         const response = await openai.beta.chat.completions.parse({
             model: process.env.CHATGPT_MODEL,
             messages: [systemMessage, userMessage],
-            temperature: 1.1, // Un po' più di creatività
+            temperature: 1,
             response_format: zodResponseFormat(EpisodeObject, "episode"),
         });
 
         const episode = response.choices[0].message.parsed;
-        console.log("[OpenAI] Episodio completo generato con successo:", episode);
+        console.log("[OpenAI] Episodio base generato con successo:", episode);
         return episode;
     } catch (error) {
-        console.error("[OpenAI] Errore durante la generazione dell'episodio completo:", error);
-        // In caso di errore, potremmo voler ritentare o restituire un oggetto di fallback
-        // Per ora, rilanciamo l'errore per renderlo visibile
+        console.error("[OpenAI] Errore durante la generazione dell'episodio base:", error);
         throw error;
     }
 };
-
 
 // --- CODICE ASSISTENTE (INVARIATO) ---
 const assistant = await openai.beta.assistants.retrieve(process.env.CHATGPT_ASSISTANT);
@@ -67,7 +63,6 @@ export const askDnD5eAssistant = async (question) => {
 }
 
 const pollThreadStatus = async (threadId, runId) => {
-    // ... (codice invariato)
     let threadRetrieve;
     const pollInterval = 2000;
     return new Promise((resolve, reject) => {
@@ -89,7 +84,6 @@ const pollThreadStatus = async (threadId, runId) => {
 };
 
 async function replaceAnnotationsWithFileNames(text, annotations) {
-    // ... (codice invariato)
     async function getFileName(fileId) {
         try {
             const fileInfo = await openai.files.retrieve(fileId);

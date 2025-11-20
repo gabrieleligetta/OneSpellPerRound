@@ -4,43 +4,54 @@ import { WizardScene } from "telegraf/scenes";
 import { message } from "telegraf/filters";
 
 const step1 = async (ctx) => {
-  ctx.reply("Come si chiamerà il tuo personaggio?");
+  await ctx.reply("Come si chiamerà il tuo personaggio?");
   return ctx.wizard.next();
 };
 
 const step2 = new Composer();
 
 step2.on(message("text"), async (ctx) => {
-  ctx.reply("Oh, splendido nome.");
+  await ctx.reply("Oh, splendido nome. Sto forgiando il tuo eroe...");
   const name = ctx.update.message.text;
   const chatId = ctx.chat.id;
   const owner = ctx.message.from.id;
   const char = await createCharacter(chatId, owner, name);
-  if (!!char) {
+
+  if (char) {
     await ctx.replyWithHTML(
-      `Il personaggio appena creato: \n nome: <b>${char.name}</b>\n livello: <b>${char.level}</b>`
+      `Personaggio creato con successo!\n<b>Nome:</b> ${char.name}\n<b>Livello:</b> ${char.level}`
     );
-    leaveScene(ctx);
+
+    // Controlla se dobbiamo avviare l'avventura
+    if (ctx.scene.state.startAdventureAfter) {
+      console.log("Creazione personaggio completata, avvio avventura di Marta...");
+      await ctx.reply("Ora ti porto nell'avventura di Marta!");
+      
+      // Imposta il lock e avvia la scena dell'avventura con il nuovo personaggio
+      ctx.session.adventureLock = true;
+      return ctx.scene.enter("martaAdventureScene", { character: char });
+    } else {
+      // Flusso normale: esce dalla scena
+      return leaveScene(ctx);
+    }
   } else {
-    ctx.reply(`c'è stato un errore durante la creazione del tuo personaggio`);
-    ctx.reply("Proviamo di nuovo");
-    const currentStepIndex = ctx.wizard.cursor;
-    return ctx.wizard.selectStep(currentStepIndex);
+    await ctx.reply(`C'è stato un errore durante la creazione del tuo personaggio. Riprova.`);
+    return ctx.scene.reenter(); // Riavvia la scena corrente
   }
 });
 
 const leaveScene = (ctx) => {
-  ctx.reply("Ciao!");
+  ctx.reply("Puoi vedere i tuoi personaggi con /mycharacters e crearne altri con /createcharacter.");
   return ctx.scene.leave();
 };
 
 step2.command("cancel", (ctx) => {
-  ctx.reply("Ciao!");
+  ctx.reply("Creazione personaggio annullata.");
   return ctx.scene.leave();
 });
 
 export const characterScene = new WizardScene(
   "characterScene",
-  (ctx) => step1(ctx),
+  step1,
   step2
 );

@@ -19,23 +19,20 @@ import { generateEpisodeFormat } from "./prompts.js";
 import { askDnD5eAssistant } from "./openai.js";
 import { fileUploadScene } from "./scenes/fileUploadScene.js";
 import { martaAdventureScene } from "./scenes/martaAdventureScene.js";
-import { client as mongoClient } from "./mongoDB.js";
-import { Mongo } from "@telegraf/session/mongodb";
+import { client as mongoClient, listFromCollection, getFromCollection } from "./mongoDB.js";
+import { ObjectId } from "mongodb";
+import {Mongo} from "@telegraf/session/mongodb";
 
 dotenv.config();
 
 async function startBot() {
   try {
-    // 1. Connessione al Database
     console.log("Tentativo di connessione a MongoDB...");
     await mongoClient.connect();
     console.log(">>> Connessione a MongoDB stabilita con successo!");
 
-    // 2. Configurazione del Bot (solo dopo connessione avvenuta)
     const token = process.env.BOT_TOKEN;
-    if (token === undefined) {
-      throw new Error("BOT_TOKEN must be provided!");
-    }
+    if (token === undefined) throw new Error("BOT_TOKEN must be provided!");
 
     const bot = new Telegraf(token);
 
@@ -52,36 +49,22 @@ async function startBot() {
     const stage = new Stage([characterScene, fileUploadScene, martaAdventureScene]);
     bot.use(stage.middleware());
 
-    // Registrazione di tutti i comandi e le azioni
     setupBotHandlers(bot);
+    setupCronJobs(bot);
 
-    // Avvio dei cron job
-    setupCronJobs();
-
-    // Gestore di errori globale
     bot.catch((err, ctx) => {
       console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
-      if (ctx.session) {
-        ctx.session.adventureLock = false;
-      }
+      if (ctx.session) ctx.session.adventureLock = false;
       ctx.reply("Si è verificato un errore, per favore riprova più tardi.").catch(e => {
         console.error("Failed to send error message to user", e);
       });
     });
 
-    // 3. Avvio del Bot
     await bot.launch();
     console.log(">>> Bot avviato e in ascolto!");
 
-    // Gestione chiusura pulita
-    process.once('SIGINT', () => {
-        bot.stop('SIGINT');
-        mongoClient.close();
-    });
-    process.once('SIGTERM', () => {
-        bot.stop('SIGTERM');
-        mongoClient.close();
-    });
+    process.once('SIGINT', () => { bot.stop('SIGINT'); mongoClient.close(); });
+    process.once('SIGTERM', () => { bot.stop('SIGTERM'); mongoClient.close(); });
 
   } catch (error) {
     console.error("Impossibile avviare il bot:", error);
@@ -90,17 +73,20 @@ async function startBot() {
 }
 
 function setupBotHandlers(bot) {
-  bot.command("randomchar", (ctx) => sendCharacter(ctx, "standard"));
-  bot.command("randomrolledchar", (ctx) => sendCharacter(ctx, "rolled"));
-  bot.command("randombestchar", (ctx) => sendCharacter(ctx, "best"));
+  // Comandi randomchar
+  bot.command("randomChar", (ctx) => sendCharacter(ctx, "standard"));
+  bot.command("randomRolledChar", (ctx) => sendCharacter(ctx, "rolled"));
+  bot.command("randomBestChar", (ctx) => sendCharacter(ctx, "best"));
 
-  bot.command("randomspell", async (ctx) => {
+  // Comando randomspell
+  bot.command("randomSpell", async (ctx) => {
     await ctx.persistentChatAction("typing", async () => {
       const reply = await getSpell("random");
       await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
     });
   });
 
+  // Comando enterDungeon
   bot.command("enterDungeon", async (ctx) => {
     console.log("Comando /enterDungeon ricevuto. Uscita forzata da scene precedenti.");
     await ctx.scene.leave();
@@ -115,58 +101,90 @@ function setupBotHandlers(bot) {
     );
   });
 
+  // Azione startMartaAdventure
   bot.action("startMartaAdventure", async (ctx) => {
-    console.log("Azione 'startMartaAdventure' ricevuta.");
+    await ctx.answerCbQuery();
+    const userId = ctx.from.id;
+    const userCharacters = await listFromCollection("characters", "owner", userId);
+
+    if (userCharacters && userCharacters.length > 0) {
+      const buttons = userCharacters.map(char => 
+        Markup.button.callback(char.name, `selectChar:${char._id}`)
+      );
+      await ctx.editMessageText(
+        "Scegli quale dei tuoi eroi parteciperà all'avventura:",
+        Markup.inlineKeyboard(buttons, { columns: 1 })
+      );
+    } else {
+      await ctx.editMessageText("Non hai ancora un eroe! Creiamone uno insieme per iniziare l'avventura.");
+      ctx.scene.enter("characterScene", { startAdventureAfter: true });
+    }
+  });
+
+  // Azione selectChar
+  bot.action(/selectChar:(.+)/, async (ctx) => {
+    const charId = ctx.match[1];
+    console.log(`Selezione personaggio con ID: ${charId}`);
+    
     if (ctx.session.adventureLock) {
       return ctx.answerCbQuery("Sto già preparando un'avventura per te!", { show_alert: true });
     }
+    
+    const character = await getFromCollection("characters", "_id", new ObjectId(charId));
+    if (!character) {
+        return ctx.reply("Non ho trovato questo personaggio. Riprova.");
+    }
+
     ctx.session.adventureLock = true;
-    await ctx.answerCbQuery("L'avventura sta per iniziare!");
-    await ctx.reply("Sto creando la tua avventura, un momento...");
-    ctx.scene.enter("martaAdventureScene");
+    await ctx.answerCbQuery(`Hai scelto ${character.name}!`);
+    await ctx.editMessageText(`L'avventura di ${character.name} sta per iniziare...`);
+    
+    ctx.scene.enter("martaAdventureScene", { character: character });
   });
 
-  bot.command("reset_adventure", (ctx) => {
-    console.log("Comando /reset_adventure ricevuto. Reset della sessione.");
+  // Comando resetAdventure
+  bot.command("resetAdventure", (ctx) => {
     ctx.session = { adventureLock: false };
     ctx.scene.leave();
     ctx.reply("Il tuo stato è stato resettato.");
   });
 
+  // --- NUOVO COMANDO newEpisode ---
+  bot.command("newEpisode", async (ctx) => {
+    console.log("Comando /newEpisode ricevuto. Rigenerazione episodio e reset stato.");
+    await ctx.reply("Sto generando un nuovo episodio per l'avventura di Marta. Potrebbe volerci un momento...");
+    
+    try {
+      await generateEpisodeFormat(); // Questa funzione genera e salva il nuovo episodio
+      ctx.session = { adventureLock: false }; // Reset dello stato utente
+      ctx.scene.leave(); // Uscita da qualsiasi scena
+      await ctx.reply("Un nuovo episodio è stato generato e il tuo stato è stato resettato. Ora puoi iniziare una nuova avventura!");
+    } catch (error) {
+      console.error("Errore durante la generazione del nuovo episodio:", error);
+      await ctx.reply("Si è verificato un errore durante la generazione del nuovo episodio. Riprova più tardi.");
+    }
+  });
+  // --------------------------------
+
+  // Comandi sub/unsub
   bot.command("sub", async (ctx) => {
     await bot.telegram.sendMessage(ctx.chat.id, "A quale broadcast vuoi iscriverti?", Markup.inlineKeyboard([
         Markup.button.callback("Marta", "marta@subscribe"),
         Markup.button.callback("RandomSpell", "randomSpell@subscribe"),
     ]));
   });
-
   bot.command("unsub", async (ctx) => {
     await bot.telegram.sendMessage(ctx.chat.id, "Da quale broadcast vuoi uscire?", Markup.inlineKeyboard([
         Markup.button.callback("Marta", "marta@unsubscribe"),
         Markup.button.callback("RandomSpell", "randomSpell@unsubscribe"),
     ]));
   });
-
-  bot.action("marta@subscribe", async (ctx) => {
-    await setInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
-    return ctx.reply("Sottoscrizione Marta effettuata");
-  });
-
-  bot.action("randomSpell@subscribe", async (ctx) => {
-    await setInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
-    return ctx.reply("Sottoscrizione RandomSpell effettuata");
-  });
-
-  bot.action("marta@unsubscribe", async (ctx) => {
-    await removeInBroadcastSubs(MARTA_SUBS, ctx.chat.id);
-    return ctx.reply("Sottoscrizione Marta rimossa");
-  });
-
-  bot.action("randomSpell@unsubscribe", async (ctx) => {
-    await removeInBroadcastSubs(SPELLS_SUBS, ctx.chat.id);
-    return ctx.reply("Sottoscrizione RandomSpell rimossa");
-  });
-
+  bot.action("marta@subscribe", async (ctx) => { await setInBroadcastSubs(MARTA_SUBS, ctx.chat.id); return ctx.reply("Sottoscrizione Marta effettuata"); });
+  bot.action("randomSpell@subscribe", async (ctx) => { await setInBroadcastSubs(SPELLS_SUBS, ctx.chat.id); return ctx.reply("Sottoscrizione RandomSpell effettuata"); });
+  bot.action("marta@unsubscribe", async (ctx) => { await removeInBroadcastSubs(MARTA_SUBS, ctx.chat.id); return ctx.reply("Sottoscrizione Marta rimossa"); });
+  bot.action("randomSpell@unsubscribe", async (ctx) => { await removeInBroadcastSubs(SPELLS_SUBS, ctx.chat.id); return ctx.reply("Sottoscrizione RandomSpell rimossa"); });
+  
+  // Comando ask
   bot.command('ask', async (ctx) => {
     await ctx.persistentChatAction("typing", async () => {
       const messageText = ctx.message.text;
@@ -179,7 +197,8 @@ function setupBotHandlers(bot) {
       }
     });
   });
-
+  
+  // Comandi createCharacter, sonogiosy, beSilly
   bot.command("createCharacter", Stage.enter("characterScene"));
   bot.command("sonogiosy", Stage.enter("fileUploadScene"));
   bot.command("beSilly", async () => await randomSpellBroadcast(bot));
@@ -194,20 +213,12 @@ async function sendCharacter(ctx, type) {
     });
 }
 
-function setupCronJobs() {
+function setupCronJobs(bot) {
   cron.schedule("0 10 * * *", async () => await randomSpellBroadcast(bot));
-
   cron.schedule("00 16 * * *", async () => {
-    console.log("CRON: Esecuzione broadcast di Marta.");
-    try {
-      await raccontoDiMartaBroadcast(bot);
-    } catch (e) {
-      console.error("CRON: Errore nel broadcast di Marta:", e);
-    }
+    try { await raccontoDiMartaBroadcast(bot); } catch (e) { console.error("CRON: Errore nel broadcast di Marta:", e); }
   });
-
   cron.schedule("0 1 * * *", async () => {
-    console.log("CRON: Pre-generazione dell'episodio di Marta...");
     try {
       const newEpisode = await generateEpisodeFormat();
       await setMartaEpisodePrompt(newEpisode);
@@ -216,9 +227,7 @@ function setupCronJobs() {
       console.error("CRON: Errore durante la pre-generazione dell'episodio:", error);
     }
   });
-
   cron.schedule("0 0 * * *", async () => {
-    console.log("CRON: Reset dei lock delle avventure.");
     try {
       const sessionsCollection = mongoClient.db("marta_game").collection("sessions");
       const result = await sessionsCollection.updateMany(
@@ -232,5 +241,4 @@ function setupCronJobs() {
   });
 }
 
-// Avvia l'applicazione
 startBot();
