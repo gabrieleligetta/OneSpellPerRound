@@ -52,7 +52,20 @@ async function startBot() {
 
         bot.use(sessionMiddleware);
 
-        // Session initialization is now cleaner, as adventureLock is handled in the DB
+        // Middleware to ensure a user document exists for every request.
+        // This is a safe, idempotent upsert that prevents race conditions.
+        bot.use(async (ctx, next) => {
+            if (ctx.from) {
+                const usersCollection = db.collection("users");
+                await usersCollection.updateOne(
+                    { _id: ctx.from.id },
+                    { $setOnInsert: { adventureLock: false } },
+                    { upsert: true }
+                );
+            }
+            return next();
+        });
+
         bot.use(async (ctx, next) => {
             if (!ctx.session) ctx.session = {};
             return next();
@@ -68,9 +81,8 @@ async function startBot() {
         bot.catch(async (err, ctx) => {
             console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
             // Safety unlock: If an error occurs, ensure the user isn't stuck.
-            // We now update the 'users' collection directly.
             if (ctx.from) {
-                const usersCollection = mongoClient.db("marta_game").collection("users");
+                const usersCollection = db.collection("users");
                 await usersCollection.updateOne({ _id: ctx.from.id }, { $set: { adventureLock: false } });
             }
             ctx.reply("Si è verificato un errore, per favore riprova più tardi.").catch(e => {
@@ -78,8 +90,11 @@ async function startBot() {
             });
         });
 
-        await bot.launch();
+        // Log confirmation message *before* launching the bot
         console.log(">>> Bot avviato e in ascolto!");
+        
+        // Launch the bot. No 'await' here, as it's a long-running process.
+        bot.launch();
 
         // Robust Signal Handling for Graceful Shutdown
         const stopSignalHandler = (signal) => {
@@ -101,17 +116,17 @@ async function startBot() {
 }
 
 function setupBotHandlers(bot) {
+    const db = mongoClient.db("marta_game");
     // Comandi randomchar
-    bot.command("randomChar", (ctx) => sendCharacter(ctx, "standard"));
-    bot.command("randomRolledChar", (ctx) => sendCharacter(ctx, "rolled"));
-    bot.command("randomBestChar", (ctx) => sendCharacter(ctx, "best"));
+    bot.command("randomchar", (ctx) => sendCharacter(ctx, "standard"));
+    bot.command("randomrolledchar", (ctx) => sendCharacter(ctx, "rolled"));
+    bot.command("randombestchar", (ctx) => sendCharacter(ctx, "best"));
 
     // Comando randomspell
-    bot.command("randomSpell", async (ctx) => {
-        await ctx.persistentChatAction("typing", async () => {
-            const reply = await getSpell("random");
-            await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
-        });
+    bot.command("randomspell", async (ctx) => {
+        await ctx.sendChatAction("typing");
+        const reply = await getSpell("random");
+        await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
     });
 
     // Comando enterDungeon
@@ -149,19 +164,21 @@ function setupBotHandlers(bot) {
         }
     });
 
-    // Azione selectChar - WITH ATOMIC LOCK
+    // Azione selectChar - WITH SAFE ATOMIC LOCK
     bot.action(/selectChar:(.+)/, async (ctx) => {
         const charId = ctx.match[1];
         const userId = ctx.from.id;
-        const usersCollection = mongoClient.db("marta_game").collection("users");
+        const usersCollection = db.collection("users");
 
-        // ATOMIC OPERATION: Try to acquire the lock
+        // ATOMIC OPERATION: Try to acquire the lock.
+        // The user document is guaranteed to exist by our new middleware.
         const result = await usersCollection.findOneAndUpdate(
-            { _id: userId, $or: [{ adventureLock: false }, { adventureLock: { $exists: false } }] },
-            { $set: { adventureLock: true } },
-            { upsert: true }
+            { _id: userId, adventureLock: false }, // Simple, safe query
+            { $set: { adventureLock: true } }
+            // No upsert needed, preventing race conditions.
         );
 
+        // If `result` is null, it means no document matched (lock was already true).
         if (!result) {
             return ctx.answerCbQuery("Sto già preparando un'avventura per te!", { show_alert: true });
         }
@@ -190,7 +207,7 @@ function setupBotHandlers(bot) {
 
     // Comando resetAdventure
     bot.command("resetAdventure", async (ctx) => {
-        const usersCollection = mongoClient.db("marta_game").collection("users");
+        const usersCollection = db.collection("users");
         await usersCollection.updateOne({ _id: ctx.from.id }, { $set: { adventureLock: false } });
         if (ctx.scene) await ctx.scene.leave();
         ctx.reply("Il tuo stato è stato resettato.");
@@ -204,7 +221,7 @@ function setupBotHandlers(bot) {
         try {
             await generateEpisodeFormat();
             // Also reset user lock on episode regeneration
-            const usersCollection = mongoClient.db("marta_game").collection("users");
+            const usersCollection = db.collection("users");
             await usersCollection.updateOne({ _id: ctx.from.id }, { $set: { adventureLock: false } });
             if (ctx.scene) await ctx.scene.leave();
             await ctx.reply("Un nuovo episodio è stato generato e il tuo stato è stato resettato. Ora puoi iniziare una nuova avventura!");
@@ -235,16 +252,15 @@ function setupBotHandlers(bot) {
 
     // Ask Command
     bot.command('ask', async (ctx) => {
-        await ctx.persistentChatAction("typing", async () => {
-            const messageText = ctx.message.text;
-            const question = messageText.replace('/ask', '').trim();
-            if (question!== "") {
-                const reply = await askDnD5eAssistant(question);
-                await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
-            } else {
-                ctx.reply("per favore inserisci una domanda valida");
-            }
-        });
+        await ctx.sendChatAction("typing");
+        const messageText = ctx.message.text;
+        const question = messageText.replace('/ask', '').trim();
+        if (question!== "") {
+            const reply = await askDnD5eAssistant(question);
+            await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
+        } else {
+            ctx.reply("per favore inserisci una domanda valida");
+        }
     });
 
     bot.command("createCharacter", (ctx) => ctx.scene.enter("characterScene"));
@@ -253,16 +269,16 @@ function setupBotHandlers(bot) {
 }
 
 async function sendCharacter(ctx, type) {
-    await ctx.persistentChatAction("typing", async () => {
-        const msg = ctx.message.text;
-        const charLevel = 1;
-        const reply = await getStandardChar(msg, charLevel, type);
-        await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
-    });
+    await ctx.sendChatAction("typing");
+    const msg = ctx.message.text;
+    const charLevel = 1;
+    const reply = await getStandardChar(msg, charLevel, type);
+    await ctx.telegram.sendMessage(ctx.chat.id, reply, { parse_mode: "HTML" });
 }
 
 function setupCronJobs(bot) {
-    cron.schedule("0 10 * * *", async () => await randomSpellBroadcast(bot));
+    const db = mongoClient.db("marta_game");
+    cron.schedule("0 11 * * *", async () => await randomSpellBroadcast(bot));
     cron.schedule("00 16 * * *", async () => {
         try { await raccontoDiMartaBroadcast(bot); } catch (e) { console.error("CRON: Errore nel broadcast di Marta:", e); }
     });
@@ -277,11 +293,9 @@ function setupCronJobs(bot) {
     });
 
     // Automatic Session Unlocker - NOW ON 'users' COLLECTION
-    // This helps clean up stuck states if the bot crashes or users abandon a flow.
     cron.schedule("0 0 * * *", async () => {
         try {
-            // We now target the 'users' collection directly.
-            const usersCollection = mongoClient.db("marta_game").collection("users");
+            const usersCollection = db.collection("users");
             const result = await usersCollection.updateMany(
                 { "adventureLock": true },
                 { $set: { "adventureLock": false } }
