@@ -19,19 +19,25 @@ export const randomSpellBroadcast = async (bot) => {
       Prompts.BattuteDnD,
       process.env.CHATGPT_MODEL
     );
-    if (!battuta) {
-      battuta = "Oh no! Qualcosa non ha funzionato!";
-    }
+    
     for (const chatId of USERS_CACHE.value) {
-      await bot.telegram.sendMessage(
-        chatId,
-        "Ecco la battuta cringe del giorno!"
-      );
-      await bot.telegram.sendMessage(chatId, battuta);
-      await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!");
-      await bot.telegram.sendChatAction(chatId, "typing");
-      let reply = await getSpell("random");
-      await bot.telegram.sendMessage(chatId, reply, { parse_mode: "HTML" });
+      try {
+        if (battuta) {
+          await bot.telegram.sendMessage(
+            chatId,
+            "Ecco la battuta cringe del giorno!"
+          );
+          await bot.telegram.sendMessage(chatId, battuta);
+        }
+
+        await bot.telegram.sendMessage(chatId, "Ecco la spell del giorno!");
+        await bot.telegram.sendChatAction(chatId, "typing");
+        let reply = await getSpell("random");
+        await bot.telegram.sendMessage(chatId, reply, { parse_mode: "HTML" });
+
+      } catch (error) {
+        console.error(`Failed to send broadcast to chat ${chatId}:`, error);
+      }
     }
   }
 };
@@ -50,16 +56,13 @@ export const raccontoDiMartaBroadcast = async (bot) => {
         await bot.telegram.sendPhoto(chatId, {
           source: "./imgs/witch2.jpeg",
         });
-        // La riga seguente è stata rimossa perché obsoleta
-        // setInUniqueActionArray(chatId); 
         await bot.telegram.sendMessage(
           chatId,
           "Avviare una nuova avventura di Marta la papera col cappello da strega?",
           Markup.inlineKeyboard([
             Markup.button.callback(
-              "Tira Il Dado!",
-              "startMartaAdventure",
-              false
+              "Sì, avvia l'avventura!",
+              "startMartaAdventure"
             ),
           ])
         );

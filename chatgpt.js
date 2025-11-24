@@ -5,7 +5,43 @@ export async function generalPrompt(
   type = null,
   model = process.env.CHATGPT_MODEL
 ) {
-  // ... (codice invariato)
+  const apiKey = process.env.CHATGPT_API_KEY;
+  let systemPrompt = "Sei un assistente utile."; // Default
+
+  // Set system prompt based on type
+  if (type === "BattuteDnD") {
+    systemPrompt = "Sei un bardo comico specializzato in battute a tema fantasy e Dungeons & Dragons. Rispondi solo ed esclusivamente con il testo della battuta, senza alcuna introduzione o commento.";
+  }
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: richiesta.text },
+  ];
+
+  const data = {
+    model: model,
+    messages: messages,
+    temperature: richiesta.temperature || 0.7,
+  };
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    
+    return response.data.choices[0].message.content.trim();
+
+  } catch (e) {
+    console.error("Errore in generalPrompt:", e.response ? e.response.data.error : e.message);
+    return null; // Return null on error, so the broadcast can handle it
+  }
 }
 
 export async function promptForMarta(
@@ -17,9 +53,6 @@ export async function promptForMarta(
   forceQuestion = false // Nuovo parametro per controllare la domanda finale
 ) {
   let currentHistory = [...messageHistory];
-
-  // Rimosse le istruzioni per l'AI su come formattare l'output JSON da qui.
-  // Saranno aggiunte una sola volta all'inizio della scena in martaAdventureScene.js
 
   // Aggiungi il payload JSON come messaggio utente
   currentHistory.push({
