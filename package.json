@@ -28,6 +28,7 @@
     "random-item": "^4.0.1",
     "select-random-file": "^1.2.4",
     "telegraf": "^4.16.3",
+    "telegraf-session-mongodb": "^2.0.2",
     "unique-random-array": "^4.0.0",
     "zod": "^3.23.8"
   },
